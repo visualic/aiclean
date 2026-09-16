@@ -1,4 +1,4 @@
-# claude-config-audit
+# aiclean
 
 Audit and clean up a Claude Code setup against Anthropic's current
 prompt-engineering guidance.
@@ -16,15 +16,15 @@ This skill finds it and asks before touching anything.
 ### Claude Code
 
 ```
-/plugin marketplace add visualic/claude-config-audit
-/plugin install config-audit@visualic
+/plugin marketplace add visualic/aiclean
+/plugin install aiclean@visualic
 ```
 
 ### Codex CLI and other harnesses
 
 ```sh
-git clone https://github.com/visualic/claude-config-audit.git ~/claude-config-audit
-cd ~/claude-config-audit && ./install.sh
+git clone https://github.com/visualic/aiclean.git ~/aiclean
+cd ~/aiclean && ./install.sh
 ```
 
 Links the skill into every harness home it finds (`~/.codex`, `~/.agents`,
@@ -38,7 +38,7 @@ Open a session and ask:
 
 > 내 클로드 설정 점검해줘
 
-or run `/config-audit` in Claude Code.
+or run `/aiclean` in Claude Code.
 
 It gathers evidence, reports findings, and waits. Nothing is changed without
 your say-so, nothing is deleted — approved removals are moved to
@@ -92,9 +92,9 @@ contents, so open the file.
 ```
 .claude-plugin/marketplace.json          Claude Code marketplace definition
 install.sh                               installer for non-plugin harnesses
-plugins/config-audit/
+plugins/aiclean/
   .claude-plugin/plugin.json
-  skills/config-audit/
+  skills/aiclean/
     SKILL.md                             the procedure
     scripts/inventory.py                 sizes, frontmatter, routing cost
     scripts/usage.py                     real invocations from session logs
@@ -108,10 +108,10 @@ plugins/config-audit/
 The scripts run standalone if you would rather read the numbers yourself:
 
 ```sh
-python3 plugins/config-audit/skills/config-audit/scripts/inventory.py
-python3 plugins/config-audit/skills/config-audit/scripts/usage.py
-python3 plugins/config-audit/skills/config-audit/scripts/health.py
-python3 plugins/config-audit/skills/config-audit/scripts/workspaces.py
+python3 plugins/aiclean/skills/aiclean/scripts/inventory.py
+python3 plugins/aiclean/skills/aiclean/scripts/usage.py
+python3 plugins/aiclean/skills/aiclean/scripts/health.py
+python3 plugins/aiclean/skills/aiclean/scripts/workspaces.py
 ```
 
 All four take `--root` and `--json`.

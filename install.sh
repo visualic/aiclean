@@ -1,10 +1,10 @@
 #!/bin/sh
-# Install the config-audit skill for harnesses that do not support Claude Code
+# Install the aiclean skill for harnesses that do not support Claude Code
 # plugins — Codex CLI and friends.
 #
 # Claude Code users do NOT need this script. Use the plugin instead:
-#     /plugin marketplace add visualic/claude-config-audit
-#     /plugin install config-audit@visualic
+#     /plugin marketplace add visualic/aiclean
+#     /plugin install aiclean@visualic
 #
 # This links (does not copy) the skill from this checkout, so `git pull` updates
 # every harness at once. Uninstall with: ./install.sh --uninstall
@@ -17,8 +17,8 @@
 
 set -eu
 
-SKILL_NAME="config-audit"
-SRC="$(cd "$(dirname "$0")" && pwd)/plugins/config-audit/skills/$SKILL_NAME"
+SKILL_NAME="aiclean"
+SRC="$(cd "$(dirname "$0")" && pwd)/plugins/aiclean/skills/$SKILL_NAME"
 
 # Harness home directories that read ~/<dir>/skills/<name>/SKILL.md.
 # .claude is intentionally absent: Claude Code should install the plugin.
@@ -90,18 +90,18 @@ done
 if [ "$found" -eq 0 ]; then
   echo "No supported harness directory found under \$HOME (looked for: $HARNESSES)."
   echo "If you use Claude Code, install the plugin instead:"
-  echo "  /plugin marketplace add visualic/claude-config-audit"
+  echo "  /plugin marketplace add visualic/aiclean"
   exit 0
 fi
 
 [ "$MODE" = "install" ] && cat <<'EOF'
 
 Done. Open a new session in your agent and ask it to audit your Claude setup,
-or run the skill by name: config-audit
+or run the skill by name: aiclean
 
 Claude Code users: use the plugin instead of this script —
-  /plugin marketplace add visualic/claude-config-audit
-  /plugin install config-audit@visualic
+  /plugin marketplace add visualic/aiclean
+  /plugin install aiclean@visualic
 EOF
 
 exit 0

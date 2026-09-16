@@ -8,9 +8,9 @@
   },
   "plugins": [
     {
-      "name": "config-audit",
-      "displayName": "Claude Config Audit",
-      "source": "./plugins/config-audit",
+      "name": "aiclean",
+      "displayName": "aiclean",
+      "source": "./plugins/aiclean",
       "category": "productivity",
       "description": "Anthropic 공식 프롬프트 가이드 기준으로 ~/.claude 설정(CLAUDE.md, 스킬, 에이전트, 훅)을 감사하고 낡은 스캐폴딩·미사용 스킬·죽은 의존성을 찾아 정리한다."
     }

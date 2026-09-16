@@ -1,9 +1,9 @@
 ---
-name: config-audit
-description: Audit and clean up a Claude Code setup against Anthropic's current prompt-engineering guidance. Finds stale scaffolding in CLAUDE.md (self-verification instructions, subagent encouragement, manual chain-of-thought, hard trigger thresholds), oversized SKILL.md files that cost tens of thousands of tokens per invocation, skills with no description that can never be routed to, duplicate and dead hooks in settings.json, skills that depend on an MCP server or API key that is not configured, broken cross-references, and skills that have never once been invoked. Reports findings and asks before changing anything; archives rather than deletes. Use on /config-audit, or for requests like "내 클로드 설정 점검해줘", "스킬 정리해줘", "설정 최적화", "audit my Claude setup", "why is my context so full", "clean up my skills".
+name: aiclean
+description: Audit and clean up a Claude Code setup against Anthropic's current prompt-engineering guidance. Finds stale scaffolding in CLAUDE.md (self-verification instructions, subagent encouragement, manual chain-of-thought, hard trigger thresholds), oversized SKILL.md files that cost tens of thousands of tokens per invocation, skills with no description that can never be routed to, duplicate and dead hooks in settings.json, skills that depend on an MCP server or API key that is not configured, broken cross-references, and skills that have never once been invoked. Reports findings and asks before changing anything; archives rather than deletes. Use on /aiclean, or for requests like "내 클로드 설정 점검해줘", "스킬 정리해줘", "설정 최적화", "audit my Claude setup", "why is my context so full", "clean up my skills".
 ---
 
-# Claude config audit
+# aiclean
 
 Audit `~/.claude` — `CLAUDE.md`, skills, agents, hooks — against Anthropic's
 current prompt-engineering guidance, and clean up what no longer earns its
