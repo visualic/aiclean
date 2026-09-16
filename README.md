@@ -68,6 +68,13 @@ run.
 **References** — links to skills that are no longer installed, including the ones
 that hide in `references/`, `templates/`, README files and helper scripts.
 
+**Project-level configuration** — `.claude/` directories committed inside
+repositories. When a toolkit is installed both globally and into a repo, both
+load there and the project copy is usually the older one. Git worktrees multiply
+this: every worktree of a repo carries its own copy, so one stale commit becomes
+dozens of directories. Reported, never edited — it is committed configuration
+that affects everyone working in the repo.
+
 **Usage** — real `Skill` and subagent invocations parsed from session
 transcripts. Not a grep: every session's system prompt lists every skill, so
 grepping returns the same number for everything and means nothing.
@@ -79,10 +86,6 @@ judgment, and `references/judgment.md` is mostly a record of how that judgment
 goes wrong — eight traps, each one a confident wrong conclusion from the audit
 this was built from. The most useful is the simplest: a skill's name is not its
 contents, so open the file.
-
-It also stays out of project-level `.claude/` directories inside repositories.
-Those are committed configuration and changing them affects everyone else
-working in the repo, so it raises them rather than editing them.
 
 ## Layout
 
@@ -96,6 +99,7 @@ plugins/config-audit/
     scripts/inventory.py                 sizes, frontmatter, routing cost
     scripts/usage.py                     real invocations from session logs
     scripts/health.py                    hooks, dead deps, broken references
+    scripts/workspaces.py                project-level .claude/ copies
     references/opus5-rules.md            guidance distilled, with source quotes
     references/judgment.md               how the evidence misleads you
     references/claude-md-template.md     drop-in working-practice block
@@ -107,9 +111,10 @@ The scripts run standalone if you would rather read the numbers yourself:
 python3 plugins/config-audit/skills/config-audit/scripts/inventory.py
 python3 plugins/config-audit/skills/config-audit/scripts/usage.py
 python3 plugins/config-audit/skills/config-audit/scripts/health.py
+python3 plugins/config-audit/skills/config-audit/scripts/workspaces.py
 ```
 
-All three take `--root` and `--json`.
+All four take `--root` and `--json`.
 
 ## Sources
 

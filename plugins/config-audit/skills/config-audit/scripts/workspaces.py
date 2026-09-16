@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""Find project-level .claude/ directories and compare them against the
+user-level setup.
+
+Why this matters more than it looks: a project-level `.claude/skills/` is
+committed configuration. It loads on top of the global setup for anyone working
+in that repo, it is usually a snapshot of whatever a toolkit's installer copied
+in on the day it ran, and it goes stale silently while the global copy gets
+updated.
+
+Teams working in git worktrees -- Conductor workspaces, `git worktree add`,
+anything that gives each task its own checkout -- hit this hardest: every
+worktree of the same repo carries its own copy, so one stale commit multiplies
+across dozens of directories.
+
+This script only reports. Changing a repository's committed configuration
+affects everyone else working in it, so raise it with the user rather than
+editing it.
+
+Usage:
+    python3 workspaces.py [--root ~/conductor/workspaces] [--root ~/projects] [--json]
+"""
+
+from __future__ import annotations
+
+import argparse
+import collections
+import glob
+import json
+import os
+import sys
+
+DEFAULT_ROOTS = [
+    "~/conductor/workspaces",
+    "~/AI",
+    "~/projects",
+    "~/src",
+    "~/dev",
+]
+
+
+def global_skills() -> set[str]:
+    root = os.path.expanduser("~/.claude/skills")
+    return {os.path.basename(os.path.dirname(p))
+            for p in glob.glob(os.path.join(root, "*", "SKILL.md"))}
+
+
+def scan(roots: list[str], max_depth: int = 3) -> list[dict]:
+    found = []
+    seen = set()
+    for root in roots:
+        root = os.path.expanduser(root)
+        if not os.path.isdir(root):
+            continue
+        # look for <root>/*/.claude, <root>/*/*/.claude, <root>/*/*/*/.claude
+        for depth in range(1, max_depth + 1):
+            pattern = os.path.join(root, *(["*"] * depth), ".claude")
+            for cdir in glob.glob(pattern):
+                if not os.path.isdir(cdir) or cdir in seen:
+                    continue
+                seen.add(cdir)
+                project = os.path.dirname(cdir)
+                skills = sorted(
+                    os.path.basename(os.path.dirname(p))
+                    for p in glob.glob(os.path.join(cdir, "skills", "*", "SKILL.md")))
+                agents = sorted(
+                    os.path.basename(p)[:-3]
+                    for p in glob.glob(os.path.join(cdir, "agents", "*.md")))
+                has_settings = any(
+                    os.path.exists(os.path.join(cdir, n))
+                    for n in ("settings.json", "settings.local.json"))
+                if not (skills or agents or has_settings):
+                    continue
+                found.append({
+                    "project": project,
+                    "display": project.replace(os.path.expanduser("~"), "~"),
+                    "skills": skills,
+                    "agents": agents,
+                    "settings": has_settings,
+                })
+    return found
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", action="append", default=None,
+                    help="directory to scan (repeatable). Defaults cover common layouts.")
+    ap.add_argument("--json", action="store_true")
+    args = ap.parse_args()
+
+    roots = args.root or DEFAULT_ROOTS
+    found = scan(roots)
+    gskills = global_skills()
+
+    if args.json:
+        print(json.dumps({"roots": roots, "global_skills": sorted(gskills),
+                          "projects": found}, ensure_ascii=False, indent=2))
+        return 0
+
+    if not found:
+        print(f"no project-level .claude/ found under: {', '.join(roots)}")
+        return 0
+
+    print(f"scanned: {', '.join(roots)}")
+    print(f"projects carrying their own .claude/: {len(found)}\n")
+
+    # Group identical skill sets: worktrees of one repo share a commit, so they
+    # report as one finding rather than twenty.
+    groups = collections.defaultdict(list)
+    for item in found:
+        groups[tuple(item["skills"])].append(item)
+
+    for skills, items in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+        if not skills:
+            continue
+        overlap = sorted(set(skills) & gskills)
+        print(f"[{len(skills)} skills x {len(items)} director{'y' if len(items)==1 else 'ies'}]")
+        for it in items[:4]:
+            print(f"    {it['display']}")
+        if len(items) > 4:
+            print(f"    ... and {len(items)-4} more")
+        print(f"    skills: {', '.join(skills[:10])}"
+              f"{' ...' if len(skills) > 10 else ''}")
+        if overlap:
+            print(f"    ALSO INSTALLED GLOBALLY: {len(overlap)} of these "
+                  f"({', '.join(overlap[:6])}{' ...' if len(overlap) > 6 else ''})")
+            print(f"    -> loaded twice in these directories; the project copy")
+            print(f"       usually wins and is usually the older one.")
+        print()
+
+    agent_items = [i for i in found if i["agents"]]
+    if agent_items:
+        print("[project-level agents]")
+        for it in agent_items[:12]:
+            print(f"    {it['display']}: {', '.join(it['agents'][:8])}"
+                  f"{' ...' if len(it['agents']) > 8 else ''}")
+        if len(agent_items) > 12:
+            print(f"    ... and {len(agent_items)-12} more")
+        print("    These are often hand-written domain agents, not toolkit")
+        print("    leftovers. Read before suggesting anything.\n")
+
+    print("This script reports only. A project's .claude/ is committed")
+    print("configuration -- changing it affects everyone working in that repo.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

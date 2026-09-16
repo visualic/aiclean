@@ -39,12 +39,14 @@ echo "$BK"
 Run all three; they are independent.
 
 ```sh
-python3 <skill-dir>/scripts/inventory.py   # sizes, frontmatter, routing cost
-python3 <skill-dir>/scripts/usage.py       # real invocations from session logs
-python3 <skill-dir>/scripts/health.py      # hooks, dead deps, broken refs
+python3 <skill-dir>/scripts/inventory.py    # sizes, frontmatter, routing cost
+python3 <skill-dir>/scripts/usage.py        # real invocations from session logs
+python3 <skill-dir>/scripts/health.py       # hooks, dead deps, broken refs
+python3 <skill-dir>/scripts/workspaces.py   # project-level .claude/ copies
 ```
 
-`--json` on any of them for machine-readable output.
+`--json` on any of them for machine-readable output. `workspaces.py` takes
+repeatable `--root` if the user's checkouts live somewhere unusual.
 
 ### 3. Read CLAUDE.md against the guidance
 
@@ -105,10 +107,30 @@ thing standing between the user and re-adding what was removed.
 | `references/judgment.md` | How the evidence misleads; eight real traps; the keep/archive decision |
 | `references/claude-md-template.md` | Drop-in working-practice block, and what it deliberately omits |
 
+## Project-level configuration
+
+`workspaces.py` finds `.claude/` directories inside repositories. Report what it
+finds; do not edit them. A project's `.claude/` is committed configuration, and
+changing it affects everyone else working in that repo.
+
+Two things make this worth raising rather than skipping:
+
+**Double loading.** When a toolkit is installed both globally and into a repo,
+both load in that repo. The project copy is a snapshot from whenever its
+installer ran, so it is usually the older one, and it usually wins.
+
+**Worktrees multiply it.** Conductor workspaces, `git worktree add`, or any
+setup that gives each task its own checkout means every worktree of a repo
+carries its own copy. One stale commit becomes dozens of directories.
+`workspaces.py` groups identical skill sets so this reads as one finding.
+
+Also separate the two things it reports. Toolkit copies (dozens of identically
+named skills across many repos) are usually leftovers. Hand-written domain
+agents — a content writer, an SEO strategist, a release checker — are
+deliberate, valuable, and must not be swept up with them. Read before
+suggesting.
+
 ## Scope
 
-This audits the user-level setup at `~/.claude`. Project-level `.claude/`
-directories inside repositories are a separate question — mention them if the
-inventory suggests they matter, but changing a repository's committed
-configuration affects anyone else working in it, so raise it rather than
-deciding it.
+This skill changes only the user-level setup at `~/.claude`, and only with
+approval. Everything else it reports.
