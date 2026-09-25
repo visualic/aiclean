@@ -50,12 +50,16 @@ repeatable `--root` if the user's checkouts live somewhere unusual.
 
 ### 3. Read CLAUDE.md against the guidance
 
-Read `~/.claude/CLAUDE.md` and check it against `references/opus5-rules.md`.
+Read `~/.claude/CLAUDE.md` and check it against `references/model-rules.md`.
 Look for instructions to **remove** (generic self-verification, "use subagents
-liberally", manual CoT, hard thresholds like "ANY task with 3+ steps",
-ALL-CAPS forcing, duplicate memory systems) and instructions to **add**
-(response length, written-document length, task scope, correction narration,
-evidence behind progress claims).
+liberally", manual CoT, "think carefully before answering", "write out your
+reasoning", hard thresholds like "ANY task with 3+ steps", ALL-CAPS forcing,
+duplicate memory systems) and instructions to **add** (response length,
+written-document length, task scope, correction narration, evidence behind
+progress claims).
+
+Also check `settings.json` for `effortLevel` or `env.CLAUDE_CODE_EFFORT_LEVEL`
+pinned at `high` or above — a carry-over from Opus 5 that costs more on Opus 5.5.
 
 `references/claude-md-template.md` has a drop-in replacement block. Keep the
 user's project-specific sections — API key tables, service quirks, house
@@ -80,6 +84,7 @@ Group by severity. Lead with things that are broken or free wins:
 - duplicate hooks, dead hook paths
 - custom skills shadowing a built-in
 - stale `CLAUDE.md` instructions, quoting the guidance
+- effort pinned for an older model — as a question
 - never-invoked skills — as a question, with the Trap 2 caveat applied
 
 ### 6. Clean up after every removal
@@ -103,7 +108,7 @@ thing standing between the user and re-adding what was removed.
 
 | File | Contents |
 |---|---|
-| `references/opus5-rules.md` | What current models need added and removed, with the source quotes |
+| `references/model-rules.md` | What current models need added and removed, with the source quotes |
 | `references/judgment.md` | How the evidence misleads; eight real traps; the keep/archive decision |
 | `references/claude-md-template.md` | Drop-in working-practice block, and what it deliberately omits |
 
