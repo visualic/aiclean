@@ -28,6 +28,10 @@ ABS_PATH = re.compile(r"(/(?:Users|home)/[^\s\"';|)]+)")
 MCP_REF = re.compile(r"mcp__([a-zA-Z0-9_-]+?)__")
 ENV_REF = re.compile(r"\$\{?([A-Z][A-Z0-9_]{3,})\}?")
 
+# Directories under skills/ that the harness manages itself (claude.ai skill
+# sync). Their contents are not the user's to fix.
+HARNESS_DIRS = {"synced"}
+
 # Shell and runtime variables that are never user secrets.
 ENV_IGNORE = {
     "PATH", "HOME", "PWD", "OLDPWD", "SHELL", "USER", "LOGNAME", "LANG", "TERM",
@@ -138,6 +142,8 @@ def check_references(root: str) -> list[tuple[str, str, str]]:
         for path in glob.glob(os.path.join(base, "**", "*.md"), recursive=True):
             owner = os.path.relpath(path, root).split(os.sep)[1] \
                 if os.sep in os.path.relpath(path, root) else ""
+            if base.endswith(os.sep + "skills") and owner in HARNESS_DIRS:
+                continue
             try:
                 text = open(path, encoding="utf-8", errors="ignore").read()
             except OSError:

@@ -1,7 +1,8 @@
 # What current Claude models need added, and what they need taken away
 
 Distilled from Anthropic's prompt engineering docs (overview, prompting best
-practices, and the per-model pages for Opus 5, Sonnet 5, Fable 5, Fable 5.1).
+practices, and the per-model pages for Opus 5, Opus 5.5, Sonnet 5, Fable 5,
+Fable 5.1).
 Read this before judging whether a rule in someone's `CLAUDE.md` is still
 earning its place.
 
@@ -39,10 +40,16 @@ different rule and should be *kept*. See `judgment.md`.
 
 ### Instructions to reflect on or narrate reasoning
 
-On Fable 5, prompts that tell the model to echo, transcribe or explain its
-internal reasoning can trigger the `reasoning_extraction` refusal category and
-force a fallback to an older model. Audit skills for "show your thinking" and
-reflection-loop instructions.
+On Fable 5 and Opus 5.5, prompts that tell the model to echo, transcribe or
+explain its internal reasoning can trigger the `reasoning_extraction` refusal
+category, and server-side fallback returns these declines to the caller rather
+than retrying them. Audit skills for "show your thinking", "write out your reasoning before
+answering" and reflection-loop instructions.
+
+> "If your prompts ask the model to write out its reasoning in the response,
+> remove those instructions, set `display: "summarized"`, and read the
+> summarized reasoning from the thinking blocks instead."
+
 
 ### Manual Chain-of-Thought / Tree-of-Thought scaffolding
 
@@ -52,6 +59,21 @@ on Fable 5 / 5.1.
 > "Prefer general instructions over prescriptive steps. A prompt like 'think
 > thoroughly' often produces better reasoning than a hand-written step-by-step
 > plan. Claude's reasoning frequently exceeds what a human would prescribe."
+
+On Opus 5.5 even the general version is superseded — thinking is always on and
+the model decides how much to do:
+
+> "If your system prompt contains instructions that tell Claude to think
+> carefully before answering, consider removing them for Claude Opus 5.5. The
+> model decides for itself how much to think, and effort is the main control."
+
+Anthropic measured removing such a line: replies started sooner with no clear
+quality loss. The inverse holds too — "answer quickly, don't overthink" is a
+weaker lever than lowering effort:
+
+> "To get less thinking, lower the effort level first. Lowering effort reduces
+> thinking, and with it cost and latency, more reliably than prompt
+> instructions do."
 
 ### Encouragement to use subagents
 
@@ -91,11 +113,47 @@ switching modes — was solving a problem that a 1M-token window and server-side
 compaction have removed. Read the skill's own justification; these usually
 announce themselves.
 
-### Model-selection routers
+### Model-selection routers, and effort pinned for an older model
 
 `effort` is now the documented primary control for the intelligence / latency /
 cost trade-off. Hand-rolled "pick a cheaper model for easy tasks" logic is
 superseded.
+
+Effort itself does not carry across models. Opus 5.5 defaults to `medium`
+(Opus 5 defaulted to `high`), and at the same level it thinks more per turn:
+
+> "Effort level names don't correspond to the same amount of thinking across
+> models: in Anthropic's testing, Claude Opus 5.5 at `medium` matches or exceeds
+> Claude Opus 5 at `high` on coding and knowledge-work evaluations."
+
+> "Reserve `xhigh` and `max` for work where you've measured a quality gain."
+
+So an `effortLevel` in `settings.json`, or `CLAUDE_CODE_EFFORT_LEVEL` in its
+`env`, set to `high` or above for Opus 5 is now a cost and latency finding.
+Report it as a question — the user may have measured a reason — not as an error.
+
+### Scaffolding for charts, diagrams and screenshots
+
+> "Re-test whether you still need scaffolding you built for visual inputs on
+> earlier models."
+
+Opus 5.5 at its lowest effort read dense charts more accurately than Opus 5 at
+its highest. Skills that exist to pre-describe screenshots, OCR a chart into a
+table before the model sees it, or walk the model through reading a diagram are
+candidates for question 2 in `judgment.md`. Crop/zoom tools and higher
+resolution still help on the densest inputs such as technical drawings — keep
+those.
+
+### Generic "avoid the AI look" design instructions
+
+> "A general instruction such as 'avoid a generic AI look' mostly swaps one
+> default for another. It responds well to instructions that name specific
+> patterns to avoid."
+
+A design skill that says only "no AI slop" or "make it distinctive" is not
+removed but rewritten: name the patterns (cream background, italic accent words
+in headlines, numbered "01/02/03" section labels, monospace labels, pill
+buttons, …) and extend the list from what the first result actually used.
 
 ---
 
@@ -150,6 +208,39 @@ The one verification-shaped instruction that is still endorsed, from Fable 5:
 > say so with the output; if a step was skipped, say that; when something is
 > done and verified, state it plainly without hedging."
 
+### Only for unattended runs: named early stops
+
+Not for the interactive `CLAUDE.md` — the guide says to leave this out where a
+person is there to answer. It belongs in skills or prompts that run headless
+(`claude -p`, scheduled routines, `/loop`). Opus 5.5 writes progress updates as
+it works, and some of them end the turn with text; an unattended loop reads that
+as done.
+
+> "Claude Opus 5.5 is responsive to instructions that name the specific kinds
+> of early stop you want it to avoid, such as ending the turn with a summary
+> that announces the next step instead of taking it. It also helps to name the
+> stops you do want, for example when no work can advance without the user's
+> input."
+
+The guide's full example names four stops: a summary that announces the next
+step, an offer to continue "unless you'd prefer otherwise", a list of
+non-blocking decisions, and pausing because a milestone felt like a good place.
+It keeps confirmation for risky or destructive actions. The harness side: keep
+open items in a checklist and cap automatic continuations at two or three.
+
+### Only for agents across many connected apps: explore first
+
+For skills that act across mail, docs, sheets and CRM connectors, where the rule
+the task depends on often sits somewhere the request didn't mention:
+
+> "Before taking any action, explore broadly with tool calls: list and open the
+> emails, documents, spreadsheet tabs and records across the available apps that
+> could be relevant to this task, including ones the task does not explicitly
+> mention, and use what you find."
+
+Only where those sources are trusted — the instruction tells the model to act on
+what it finds.
+
 ---
 
 ## Structural rules for skills
@@ -161,8 +252,12 @@ The one verification-shaped instruction that is still endorsed, from Fable 5:
 - **`description:` is the routing prompt.** A skill without one is invisible and
   can never be invoked. Write what it does *and* when to use it, including the
   literal phrases a user would type.
-- **Claude Code reads only `name` and `description` from frontmatter.** A custom
-  `trigger:` key is inert; fold its content into `description`.
+- **Only `name` and `description` (plus `when_to_use`) reach the router.**
+  Other documented keys work — `allowed-tools`, `hooks`, `model`, `effort` on
+  skills; `tools`, `model`, `effort`, `maxTurns` on agents — but they control
+  execution, not routing. An undocumented key such as a custom `trigger:` is
+  inert; fold its content into `description`. `inventory.py` holds the documented
+  key lists.
 - **A custom skill shadows a built-in one of the same name.** Check for
   collisions before naming.
 - **Prefer plugins to installers.** A plugin can be updated and uninstalled. An

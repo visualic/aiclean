@@ -132,7 +132,8 @@ third option.
 
 **2. Does it substitute for something the model now does natively?** Manual
 reasoning scaffolds, self-critique loops, context-saving orchestration, agent
-messaging protocols, "how to write good \<language\>" guides. These do not just
+messaging protocols, "how to write good \<language\>" guides, step-by-step
+walkthroughs for reading charts or screenshots. These do not just
 fail to help — the guidance says they can degrade output. Archive.
 
 **3. Is it used, or does it encode something the model cannot know?** Real

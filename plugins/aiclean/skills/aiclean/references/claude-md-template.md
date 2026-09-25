@@ -2,7 +2,7 @@
 
 A replacement for the "workflow / task management / core principles" sections
 that most older `CLAUDE.md` files accumulated. Tuned to current Claude models
-per `opus5-rules.md`: it drops the instructions the model no longer needs and
+per `model-rules.md`: it drops the instructions the model no longer needs and
 adds the ones it does.
 
 Copy it into `~/.claude/CLAUDE.md`, adapt the wording, and keep your own
@@ -39,10 +39,21 @@ most valuable part of the file.
 보일러플레이트를 넣지 않는다.
 
 ### 기록
-교훈·정정·합의된 접근은 Claude Code 내장 메모리 한 곳에만 남긴다:
-`~/.claude/projects/<프로젝트>/memory/` 의 파일 1개 + `MEMORY.md` 에 한 줄 색인.
-프로젝트 로컬 `.claude/memory/`, `tasks/lessons.md`, `tasks/todo.md` 는 쓰지
-않는다 — 기록처가 갈리면 다음 세션이 못 찾는다.
+기록은 **종류로 가른다.** 둘을 섞으면 회상이 필요한 것이 저장소에 묻히고, 증거가 필요한 것이
+버전 없는 사본으로 남는다.
+
+**교훈·정정·합의된 접근**(다음에 일하는 방식을 바꾸는 것)은 **Claude Code 내장 메모리 한 곳**에만
+남긴다: `~/.claude/projects/<프로젝트>/memory/` 의 파일 1개 + `MEMORY.md` 에 한 줄 색인.
+짧고 명령형으로, 왜와 어떻게 적용할지를 함께. 프로젝트 로컬 `.claude/memory/`
+(project.md, decisions.md, learnings.md 방식)와 `tasks/lessons.md` 는 쓰지 않는다 —
+교훈이 갈리면 다음 세션이 못 찾는다.
+
+**작업 상태**(무엇을 했고 얼마로 쟀는가)는 반대로 저장소에 남긴다 — `tasks/todo.md`,
+작업별 날짜 파일, `docs/plans/*`, 커밋 메시지, PR 본문. 버전·리뷰·증거가 붙어야 의미가 있고,
+메모리에 두면 커밋과 끊긴 사본이 하나 더 생긴다. 메모리에는 **저장소가 이미 기록하는 것을
+넣지 않는다.**
+
+코드 주석이 근거로 가리키는 문서는 그 자리에 남긴다 — 주석은 메모리를 링크할 수 없다.
 
 ### 원칙
 가장 단순한 방법으로 한다. 임시방편 대신 근본 원인을 찾는다.
@@ -59,7 +70,7 @@ most valuable part of the file.
 ## What this deliberately does not contain
 
 Each of these was in the file it replaced, and each is removed on the guidance
-quoted in `opus5-rules.md`:
+quoted in `model-rules.md`:
 
 | removed | why |
 |---|---|

@@ -48,10 +48,11 @@ your say-so, nothing is deleted — approved removals are moved to
 ## What it checks
 
 **CLAUDE.md** — instructions that current guidance says to remove (generic
-self-verification, "use subagents liberally", manual chain-of-thought, hard
-thresholds like "ANY task with 3+ steps", duplicate memory systems) and the ones
-most files are missing (response length, written-document length, task scope,
-correction narration, evidence behind progress claims).
+self-verification, "use subagents liberally", manual chain-of-thought, "think
+carefully before answering", hard thresholds like "ANY task with 3+ steps",
+duplicate memory systems), effort pinned at a level tuned for an older model,
+and the ones most files are missing (response length, written-document length,
+task scope, correction narration, evidence behind progress claims).
 
 **Skills and agents** — `SKILL.md` bodies large enough to cost tens of thousands
 of tokens per invocation; skills with no `description:`, which the router cannot
@@ -100,7 +101,7 @@ plugins/aiclean/
     scripts/usage.py                     real invocations from session logs
     scripts/health.py                    hooks, dead deps, broken references
     scripts/workspaces.py                project-level .claude/ copies
-    references/opus5-rules.md            guidance distilled, with source quotes
+    references/model-rules.md            guidance distilled, with source quotes
     references/judgment.md               how the evidence misleads you
     references/claude-md-template.md     drop-in working-practice block
 ```

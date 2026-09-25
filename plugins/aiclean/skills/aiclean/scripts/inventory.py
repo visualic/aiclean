@@ -31,14 +31,25 @@ NAME = re.compile(r"^name:\s*(.*)$", re.M)
 BODY_WARN = 10_000      # bytes
 BODY_CRITICAL = 40_000  # bytes
 
-# Keys Claude Code actually reads from skill frontmatter. Anything else is
-# inert -- most commonly a hand-rolled `trigger:` key whose content the router
-# never sees.
-KNOWN_KEYS = {"name", "description", "license", "version", "allowed-tools",
-              "user-invocable", "argument-hint", "metadata", "disable-model-invocation"}
+# Frontmatter keys Claude Code documents for skills and for subagents
+# (code.claude.com/docs/en/skills, /sub-agents). Anything else is inert -- most
+# commonly a hand-rolled `trigger:` key whose content the router never sees.
+SKILL_KEYS = {"name", "description", "when_to_use", "argument-hint", "arguments",
+              "disable-model-invocation", "user-invocable", "allowed-tools",
+              "disallowed-tools", "model", "effort", "context", "agent",
+              "background", "hooks", "paths", "shell", "metadata", "license",
+              "compatibility", "version"}
+AGENT_KEYS = {"name", "description", "tools", "disallowedTools", "model",
+              "permissionMode", "maxTurns", "skills", "mcpServers", "hooks",
+              "memory", "background", "omitClaudeMd", "effort", "isolation",
+              "color", "initialPrompt", "experimental"}
+
+# Directories under skills/ that the harness manages itself (claude.ai skill
+# sync). They are not user skills and have no top-level SKILL.md by design.
+HARNESS_DIRS = {"synced"}
 
 
-def parse(path: str) -> dict:
+def parse(path: str, known: set[str]) -> dict:
     try:
         text = open(path, encoding="utf-8", errors="ignore").read()
     except OSError:
@@ -54,7 +65,7 @@ def parse(path: str) -> dict:
         "frontmatter": True,
         "name": name.group(1).strip() if name else None,
         "description": " ".join(desc.group(1).split()) if desc else None,
-        "extra_keys": sorted(keys - KNOWN_KEYS),
+        "extra_keys": sorted(keys - known),
         "body_bytes": len(text[m.end():].encode()),
         "total_bytes": len(text.encode()),
     }
@@ -74,7 +85,7 @@ def collect(root: str) -> dict:
 
     for skill_md in sorted(glob.glob(os.path.join(root, "skills", "*", "SKILL.md"))):
         d = os.path.dirname(skill_md)
-        info = parse(skill_md)
+        info = parse(skill_md, SKILL_KEYS)
         info["id"] = os.path.basename(d)
         info["path"] = skill_md
         info["created"] = birth(d)
@@ -84,13 +95,15 @@ def collect(root: str) -> dict:
 
     # a skill directory with no SKILL.md is invisible to the router
     for d in sorted(glob.glob(os.path.join(root, "skills", "*"))):
+        if os.path.basename(d) in HARNESS_DIRS:
+            continue
         if os.path.isdir(d) and not os.path.exists(os.path.join(d, "SKILL.md")):
             items["skills"].append({"id": os.path.basename(d), "path": d,
                                     "frontmatter": False, "no_skill_md": True,
                                     "created": birth(d), "body_bytes": 0})
 
     for agent_md in sorted(glob.glob(os.path.join(root, "agents", "*.md"))):
-        info = parse(agent_md)
+        info = parse(agent_md, AGENT_KEYS)
         info["id"] = os.path.basename(agent_md)[:-3]
         info["path"] = agent_md
         info["created"] = birth(agent_md)
@@ -159,8 +172,8 @@ def main() -> int:
 
     extra = [s for s in skills + agents if s.get("extra_keys")]
     if extra:
-        print(f"\n[inert frontmatter keys] {len(extra)} -- Claude Code reads only "
-              f"name/description; move the content into description:")
+        print(f"\n[inert frontmatter keys] {len(extra)} -- not documented Claude "
+              f"Code keys; if the router should see it, move it into description:")
         for s in extra:
             print(f"  {s['id']:<32} {', '.join(s['extra_keys'])}")
 
