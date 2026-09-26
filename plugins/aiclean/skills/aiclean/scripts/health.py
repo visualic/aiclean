@@ -40,6 +40,29 @@ ENV_IGNORE = {
     "NODE_ENV", "CI", "DEBUG", "FORCE_COLOR", "NO_COLOR", "SYSTEMROOT",
 }
 
+# Credentials a CLI can take from its own login file instead of the
+# environment. The Codex CLI accepts CODEX_API_KEY, OPENAI_API_KEY, or a
+# `codex login` session in $CODEX_HOME/auth.json. The second field limits the
+# exemption to skills that are about that CLI, so an unrelated skill that needs
+# OPENAI_API_KEY is still flagged.
+def _codex_login() -> str:
+    return os.path.join(os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex"),
+                        "auth.json")
+
+
+LOGIN_FILES = {
+    "CODEX_API_KEY": (_codex_login, "codex"),
+    "OPENAI_API_KEY": (_codex_login, "codex"),
+}
+
+
+def covered_by_login(var: str, text: str) -> bool:
+    entry = LOGIN_FILES.get(var)
+    if not entry:
+        return False
+    path_fn, topic = entry
+    return topic in text.lower() and os.path.isfile(path_fn())
+
 
 def load_settings(root: str) -> list[tuple[str, dict]]:
     out = []
@@ -121,37 +144,73 @@ def check_dependencies(root: str) -> dict:
         creds = {v for v in wanted
                  if v.endswith(("_KEY", "_TOKEN", "_SECRET", "_PASSWORD"))}
         for var in sorted(creds - env_present):
-            missing_env.append((sid, var))
+            if not covered_by_login(var, text):
+                missing_env.append((sid, var))
 
     return {"missing_mcp": missing_mcp, "missing_env": missing_env,
             "configured_mcp": sorted(servers)}
 
 
+SKILL_PATH = re.compile(r"skills/([a-zA-Z0-9_-]+)/([a-zA-Z0-9_./-]*)")
+SKILL_CALL = re.compile(r'skill:\s*"([a-zA-Z0-9_-]+)"')
+
+
+def _is_user_skill_path(text: str, start: int) -> bool:
+    """True when the `skills/` at `start` means this setup's skills directory.
+
+    Skips `browser-skills/...` (part of a longer word) and paths under another
+    tool's tree such as `.agents/skills/...`; keeps bare `skills/...` and
+    `.claude/skills/...`.
+    """
+    if start == 0:
+        return True
+    prev = text[start - 1]
+    if prev.isalnum() or prev in "_-":
+        return False
+    if prev != "/":
+        return True
+    seg = re.search(r"([^\s/`'\"(]*)/$", text[max(0, start - 64):start])
+    return seg is not None and seg.group(1) in (".claude", "")
+
+
 def check_references(root: str) -> list[tuple[str, str, str]]:
-    """Files under skills/ and agents/ that point at a skill that is gone."""
+    """Files under skills/ and agents/ that point at a skill or file that is gone.
+
+    Path references are checked against the filesystem, so a directory that
+    holds only runtime files (no SKILL.md) still resolves. Skill() calls are
+    checked against the installed skill names.
+    """
+    skills_dir = os.path.join(root, "skills")
     installed = {os.path.basename(os.path.dirname(p))
-                 for p in glob.glob(os.path.join(root, "skills", "*", "SKILL.md"))}
+                 for p in glob.glob(os.path.join(skills_dir, "*", "SKILL.md"))}
     broken = []
-    patterns = [
-        (re.compile(r"skills/([a-zA-Z0-9_-]+)/"), "path"),
-        (re.compile(r'skill:\s*"([a-zA-Z0-9_-]+)"'), "Skill() call"),
-    ]
-    roots = [os.path.join(root, "skills"), os.path.join(root, "agents"),
-             os.path.join(root, "commands")]
+    roots = [skills_dir, os.path.join(root, "agents"), os.path.join(root, "commands")]
     for base in roots:
         for path in glob.glob(os.path.join(base, "**", "*.md"), recursive=True):
             owner = os.path.relpath(path, root).split(os.sep)[1] \
                 if os.sep in os.path.relpath(path, root) else ""
-            if base.endswith(os.sep + "skills") and owner in HARNESS_DIRS:
+            if base == skills_dir and owner in HARNESS_DIRS:
                 continue
             try:
                 text = open(path, encoding="utf-8", errors="ignore").read()
             except OSError:
                 continue
-            for rx, kind in patterns:
-                for name in set(rx.findall(text)):
-                    if name != owner and name not in installed:
-                        broken.append((os.path.relpath(path, root), name, kind))
+            rel = os.path.relpath(path, root)
+            for m in SKILL_PATH.finditer(text):
+                name, rest = m.group(1), m.group(2).rstrip(".")
+                if name == owner or not _is_user_skill_path(text, m.start()):
+                    continue
+                # A dotfile (`.feature-prompted-x`) is state the skill writes
+                # at run time; only its skill directory has to exist.
+                if os.path.basename(rest.rstrip("/")).startswith("."):
+                    rest = os.path.dirname(rest.rstrip("/"))
+                target = os.path.join(skills_dir, name, rest)
+                if not os.path.exists(target):
+                    shown = f"{name}/{rest}" if rest else name
+                    broken.append((rel, shown, "path"))
+            for name in set(SKILL_CALL.findall(text)):
+                if name != owner and name not in installed:
+                    broken.append((rel, name, "Skill() call"))
     return sorted(set(broken))
 
 
