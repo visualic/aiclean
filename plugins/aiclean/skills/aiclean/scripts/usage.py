@@ -38,12 +38,31 @@ import sys
 
 SKILL_CALL = re.compile(r'"name"\s*:\s*"Skill"\s*,\s*"input"\s*:\s*\{[^}]*?"skill"\s*:\s*"([^"]+)"')
 AGENT_CALL = re.compile(r'"subagent_type"\s*:\s*"([^"]+)"')
-# user-typed slash commands, e.g. {"role":"user","content":"/foo ..."}
-SLASH = re.compile(r'"(?:text|content)"\s*:\s*"/([a-zA-Z0-9:_-]{2,})')
+# User-typed slash commands live in user messages whose content is a plain
+# string: either tagged, <command-name>/foo</command-name> (after a
+# <command-message> tag when the command runs a skill), or as typed, "/foo args"
+# (how some hosts, Conductor among them, send it). Anything else that starts
+# with "/" -- tool output, file paths, URL routes like /products/vn -- is not a
+# command, so the message is parsed rather than grepped.
+COMMAND_TAG = re.compile(r"<command-name>/([a-zA-Z0-9:_-]+)</command-name>")
+TYPED_COMMAND = re.compile(r"/([a-zA-Z0-9:_-]+)(?=\s|$)")
 
-# Slash-looking strings that are just file paths, not commands.
-PATH_NOISE = {"tmp", "opt", "usr", "var", "bin", "etc", "private", "home",
-              "users", "dev", "app", "api", "v1", "v2", "src", "docs"}
+
+def typed_command(line: str) -> str | None:
+    try:
+        entry = json.loads(line)
+    except ValueError:
+        return None
+    msg = entry.get("message") if isinstance(entry, dict) else None
+    if entry.get("type") != "user" or not isinstance(msg, dict) \
+            or msg.get("role") != "user" or not isinstance(msg.get("content"), str):
+        return None
+    content = msg["content"].lstrip()
+    tag = COMMAND_TAG.search(content[:300])
+    if tag and content.startswith(("<command-name>", "<command-message>")):
+        return tag.group(1)
+    typed = TYPED_COMMAND.match(content)
+    return typed.group(1) if typed else None
 
 
 def scan(root: str) -> dict:
@@ -60,10 +79,10 @@ def scan(root: str) -> dict:
                         skills.update(SKILL_CALL.findall(line))
                     if "subagent_type" in line:
                         agents.update(AGENT_CALL.findall(line))
-                    if '"/' in line:
-                        for s in SLASH.findall(line):
-                            if s.lower() not in PATH_NOISE:
-                                slashes[s] += 1
+                    if '"/' in line or "<command-" in line:
+                        name = typed_command(line)
+                        if name:
+                            slashes[name] += 1
         except OSError:
             continue
     return {"sessions": len(files), "skills": skills,
