@@ -30,6 +30,7 @@ import collections
 import glob
 import json
 import os
+import re
 import sys
 
 DEFAULT_ROOTS = [
@@ -47,9 +48,29 @@ def global_skills() -> set[str]:
             for p in glob.glob(os.path.join(root, "*", "SKILL.md"))}
 
 
+def agent_name(path: str) -> str:
+    # An agent is identified by its frontmatter `name`, not its file name
+    # (code.claude.com/docs/en/sub-agents). Fall back to the file name.
+    try:
+        text = open(path, encoding="utf-8", errors="ignore").read(4096)
+    except OSError:
+        text = ""
+    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+    if m:
+        n = re.search(r"^name:\s*['\"]?([^'\"\n]+?)['\"]?\s*$", m.group(1), re.M)
+        if n:
+            return n.group(1)
+    return os.path.basename(path)[:-3]
+
+
+def agent_names(agents_dir: str) -> list[str]:
+    # agents/ is scanned recursively; subfolders do not change identity
+    return sorted({agent_name(p) for p in
+                   glob.glob(os.path.join(agents_dir, "**", "*.md"), recursive=True)})
+
+
 def global_agents() -> set[str]:
-    root = os.path.expanduser("~/.claude/agents")
-    return {os.path.basename(p)[:-3] for p in glob.glob(os.path.join(root, "*.md"))}
+    return set(agent_names(os.path.expanduser("~/.claude/agents")))
 
 
 def scan(roots: list[str], max_depth: int = 3) -> list[dict]:
@@ -70,9 +91,7 @@ def scan(roots: list[str], max_depth: int = 3) -> list[dict]:
                 skills = sorted(
                     os.path.basename(os.path.dirname(p))
                     for p in glob.glob(os.path.join(cdir, "skills", "*", "SKILL.md")))
-                agents = sorted(
-                    os.path.basename(p)[:-3]
-                    for p in glob.glob(os.path.join(cdir, "agents", "*.md")))
+                agents = agent_names(os.path.join(cdir, "agents"))
                 has_settings = any(
                     os.path.exists(os.path.join(cdir, n))
                     for n in ("settings.json", "settings.local.json"))
@@ -99,9 +118,13 @@ def main() -> int:
     found = scan(roots)
     gskills = global_skills()
     gagents = global_agents()
+    for item in found:
+        item["skills_shadowed_by_global"] = sorted(set(item["skills"]) & gskills)
+        item["agents_overriding_global"] = sorted(set(item["agents"]) & gagents)
 
     if args.json:
         print(json.dumps({"roots": roots, "global_skills": sorted(gskills),
+                          "global_agents": sorted(gagents),
                           "projects": found}, ensure_ascii=False, indent=2))
         return 0
 
@@ -145,7 +168,7 @@ def main() -> int:
         for it in agent_items[:12]:
             print(f"    {it['display']}: {', '.join(it['agents'][:8])}"
                   f"{' ...' if len(it['agents']) > 8 else ''}")
-            clash = sorted(set(it["agents"]) & gagents)
+            clash = it["agents_overriding_global"]
             if clash:
                 print(f"      overrides global: {', '.join(clash)} -- the project copy "
                       f"runs here, and it is usually the older one")

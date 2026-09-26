@@ -60,7 +60,7 @@ with both sides quoted.
 
 **Skills and agents** — `SKILL.md` bodies large enough to cost tens of thousands
 of tokens per invocation; skills with no `description:`, which the router sees
-only by the first line of the body and so rarely invokes; inert custom
+only by the first line of the body — often a bare heading; inert custom
 frontmatter keys; custom skills shadowing a built-in.
 
 **Hooks** — duplicate registrations that fire twice, and hooks pointing at paths

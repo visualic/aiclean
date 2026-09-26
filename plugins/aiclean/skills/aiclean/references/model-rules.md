@@ -152,11 +152,16 @@ Effort itself does not carry across models. Opus 5.5 defaults to `medium`
 
 > "Reserve `xhigh` and `max` for work where you've measured a quality gain."
 
-So an `effortLevel` in `settings.json`, a per-model level saved under
-`modelSettings` (which takes precedence over `effortLevel` for that model), or
-`CLAUDE_CODE_EFFORT_LEVEL` in its `env` (which overrides both), set to `high` or
-above for Opus 5 is now a cost and latency finding.
-Report it as a question — the user may have measured a reason — not as an error.
+Where the level is pinned decides which model it reaches. `CLAUDE_CODE_EFFORT_LEVEL`
+in `env` overrides `--effort`, `/effort` and both settings keys. A per-model entry under `modelSettings` (for
+example `"claude-opus-5-5": {"effortLevel": "high"}`) applies to that model only.
+A top-level `effortLevel` in the *user* `~/.claude/settings.json` is the older
+form: Opus 5.5 and later ignore it and start at their own default, so there it
+is stale rather than costly. In project, local or managed settings a top-level
+`effortLevel` still applies to every model. Check which model each setting
+actually reaches; a `high` or above that reaches Opus 5.5 is a cost and latency
+finding. Report it as a question — the user may have measured a reason — not as
+an error.
 
 ### Scaffolding for charts, diagrams and screenshots
 
@@ -231,8 +236,8 @@ reversibility:
 So not every confirmation rule qualifies. Approval before external side effects,
 spending, or changes to the user's own setup (this skill's ground rule 1) is a
 deliberate boundary; leave it. Harness permission prompts are a separate problem
-with a separate fix: point to the built-in `/fewer-permission-prompts` rather
-than editing prompts.
+with a separate fix: point to the bundled `/fewer-permission-prompts` skill
+(listed in code.claude.com/docs/en/commands) rather than editing prompts.
 
 ### Correction narration
 
@@ -264,11 +269,10 @@ from the sources that record it.
 Its example start is "Review progress.txt, tests.json, and the git log" — the
 notes *and* the authoritative record. Audit resume flows for that pairing: do
 they check the saved state against git and the files it describes, or treat the
-summary as current fact? Built-in memory does not need this rule; Claude Code's
-own memory prompt already says recalled memories reflect when they were written
-and that named files should be checked before use. Do not add a blanket
-"re-read everything each turn"
-instruction either — that is the unconditional re-check this file removes.
+summary as current fact? Memory files the setup tells the model to follow are
+resume state too; apply the same check. Do not add a blanket "re-read everything
+each turn" instruction either — that is the unconditional re-check this file
+removes.
 
 ### Only for unattended runs: named early stops
 
@@ -344,7 +348,8 @@ user's policy, and either side may be the deliberate one.
   answers which question. A 456 KB SKILL.md costs roughly 114,000 tokens per
   invocation.
 - **`description:` is the routing prompt.** A skill without one is listed under
-  the first line of its body, usually a heading, and rarely routes. Write what it
+  the first non-empty line of its body, and routes only as well as that line
+  describes it — often a bare heading. Write what it
   does *and* when to use it, including the literal phrases a user would type.
 - **Only `name` and `description` (plus `when_to_use`) reach the router.**
   Other documented keys work — `allowed-tools`, `hooks`, `model`, `effort` on

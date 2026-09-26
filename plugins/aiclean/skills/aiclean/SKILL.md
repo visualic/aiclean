@@ -1,6 +1,6 @@
 ---
 name: aiclean
-description: Audit and clean up a Claude Code setup against Anthropic's current prompt-engineering guidance. Finds stale scaffolding in CLAUDE.md (self-verification instructions, subagent encouragement, manual chain-of-thought, hard trigger thresholds), rules in CLAUDE.md and skills that contradict each other, oversized SKILL.md files that cost tens of thousands of tokens per invocation, skills with no description that the router can barely see, duplicate and dead hooks in settings.json, skills that depend on an MCP server or API key that is not configured, broken cross-references, and skills that have never once been invoked. Reports findings and asks before changing anything; archives rather than deletes. Use on /aiclean, or for requests like "내 클로드 설정 점검해줘", "스킬 정리해줘", "설정 최적화", "audit my Claude setup", "why is my context so full", "clean up my skills".
+description: Audit and clean up a Claude Code setup against Anthropic's current prompt-engineering guidance. Finds stale scaffolding in CLAUDE.md (self-verification instructions, subagent encouragement, manual chain-of-thought, hard trigger thresholds), rules in CLAUDE.md and skills that contradict each other, oversized SKILL.md files that cost tens of thousands of tokens per invocation, skills with no description that route on a bare heading, duplicate and dead hooks in settings.json, skills that depend on an MCP server or API key that is not configured, broken cross-references, and skills that have never once been invoked. Reports findings and asks before changing anything; archives rather than deletes. Use on /aiclean, or for requests like "내 클로드 설정 점검해줘", "스킬 정리해줘", "설정 최적화", "audit my Claude setup", "why is my context so full", "clean up my skills".
 ---
 
 # aiclean
@@ -62,9 +62,9 @@ resume and restore flows for treating a saved summary as current fact.
 Then read `CLAUDE.md` against the skills that load with it, for the four pairs
 in "Rules that contradict each other" in `model-rules.md`.
 
-Also check `settings.json` for `effortLevel`, a per-model level under
-`modelSettings`, or `env.CLAUDE_CODE_EFFORT_LEVEL` pinned at `high` or above —
-a carry-over from Opus 5 that costs more on Opus 5.5.
+Also check the settings files for effort pinned at `high` or above — a
+carry-over from Opus 5 that costs more on Opus 5.5. Which model a setting
+reaches depends on where it sits; see the effort section of `model-rules.md`.
 
 `references/claude-md-template.md` has a drop-in replacement block. Keep the
 user's project-specific sections — API key tables, service quirks, house

@@ -49,7 +49,7 @@ AGENT_KEYS = {"name", "description", "tools", "disallowedTools", "model",
 HARNESS_DIRS = {"synced"}
 
 
-def parse(path: str, known: set[str]) -> dict:
+def parse(path: str, known: set[str], fallback: bool = True) -> dict:
     try:
         text = open(path, encoding="utf-8", errors="ignore").read()
     except OSError:
@@ -57,7 +57,7 @@ def parse(path: str, known: set[str]) -> dict:
     m = FRONTMATTER.match(text)
     if not m:
         return {"frontmatter": False, "body_bytes": len(text.encode()),
-                "fallback": first_line(text)}
+                "fallback": first_line(text) if fallback else None}
     block = m.group(1)
     desc = DESCRIPTION.search(block)
     name = NAME.search(block)
@@ -66,7 +66,7 @@ def parse(path: str, known: set[str]) -> dict:
         "frontmatter": True,
         "name": name.group(1).strip() if name else None,
         "description": " ".join(desc.group(1).split()) if desc else None,
-        "fallback": None if desc else first_line(text[m.end():]),
+        "fallback": None if desc or not fallback else first_line(text[m.end():]),
         "extra_keys": sorted(keys - known),
         "body_bytes": len(text[m.end():].encode()),
         "total_bytes": len(text.encode()),
@@ -114,7 +114,8 @@ def collect(root: str) -> dict:
                                     "created": birth(d), "body_bytes": 0})
 
     for agent_md in sorted(glob.glob(os.path.join(root, "agents", "*.md"))):
-        info = parse(agent_md, AGENT_KEYS)
+        # `description` is required for agents; there is no first-line fallback
+        info = parse(agent_md, AGENT_KEYS, fallback=False)
         info["id"] = os.path.basename(agent_md)[:-3]
         info["path"] = agent_md
         info["created"] = birth(agent_md)
@@ -166,7 +167,7 @@ def main() -> int:
     missing = [s for s in skills if not s.get("description") and not s.get("no_skill_md")]
     if missing:
         print(f"\n[no description] {len(missing)} -- the router sees only the first "
-              f"line of the body, so these rarely route:")
+              f"line of the body; a bare heading barely routes:")
         for s in missing:
             why = "no frontmatter" if not s.get("frontmatter") else "no description: key"
             print(f"  {s['id']:<32} ({why}) routes on: {s.get('fallback') or '(empty)'!r}")
