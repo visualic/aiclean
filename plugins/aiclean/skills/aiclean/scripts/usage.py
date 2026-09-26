@@ -100,6 +100,49 @@ def never_invoked(root: str, res: dict) -> tuple[list[str], dict[str, list[str]]
     return never, renamed
 
 
+# Other harness homes that link skills in from ~/.claude (install.sh, gstack's
+# setup --host codex, ...). Their usage is not in Claude's transcripts.
+OTHER_HOMES = ["~/.codex", "~/.agents", "~/.cursor", "~/.gemini", "~/.hermes",
+               "~/.factory", "~/.kiro", "~/.config/opencode"]
+
+
+def shared_with_other_tools(root: str) -> dict[str, list[str]]:
+    """Installed skills that another tool's home links into.
+
+    A skill counts when its directory, or the directory its SKILL.md resolves
+    into (a toolkit install such as ~/.claude/skills/gstack), is the target of
+    a symlink under another home's skills/ tree.
+    """
+    skills_dir = os.path.realpath(os.path.join(root, "skills"))
+    linked: dict[str, set[str]] = collections.defaultdict(set)
+    for home in OTHER_HOMES:
+        base = os.path.expanduser(home)
+        tree = os.path.join(base, "skills")
+        if not os.path.isdir(tree) or os.path.realpath(base) == os.path.realpath(root):
+            continue
+        for cur, dirs, files in os.walk(tree):
+            if cur[len(tree):].count(os.sep) >= 3:
+                dirs[:] = []
+            for entry in dirs + files:
+                path = os.path.join(cur, entry)
+                if not os.path.islink(path):
+                    continue
+                target = os.path.realpath(path)
+                if target.startswith(skills_dir + os.sep):
+                    top = os.path.relpath(target, skills_dir).split(os.sep)[0]
+                    linked[top].add(home)
+    shared: dict[str, list[str]] = {}
+    for skill_md in glob.glob(os.path.join(root, "skills", "*", "SKILL.md")):
+        name = os.path.basename(os.path.dirname(skill_md))
+        homes = set(linked.get(name, ()))
+        real = os.path.realpath(skill_md)
+        if real.startswith(skills_dir + os.sep):
+            homes |= linked.get(os.path.relpath(real, skills_dir).split(os.sep)[0], set())
+        if homes:
+            shared[name] = sorted(homes)
+    return dict(sorted(shared.items()))
+
+
 def scan(root: str) -> dict:
     skills = collections.Counter()
     agents = collections.Counter()
@@ -141,6 +184,7 @@ def main() -> int:
         out = {k: (dict(v) if isinstance(v, collections.Counter) else v)
                for k, v in res.items()}
         out["never_invoked"], out["used_under_other_name"] = never_invoked(root, res)
+        out["shared_with_other_tools"] = shared_with_other_tools(root)
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0
 
@@ -172,14 +216,27 @@ def main() -> int:
               f"under the name the skill had then:")
         for name, earlier in renamed.items():
             print(f"  {name:<32} as {', '.join(earlier)}")
+    shared = shared_with_other_tools(root)
+    if shared:
+        by_home: dict[str, list[str]] = collections.defaultdict(list)
+        for name, homes in shared.items():
+            for h in homes:
+                by_home[h].append(name)
+        print(f"\n[shared with another tool] {len(shared)} -- another tool links into "
+              f"these; its use is not in these transcripts, and archiving them "
+              f"breaks it:")
+        for h, names in sorted(by_home.items()):
+            more = f" ... (+{len(names) - 8})" if len(names) > 8 else ""
+            print(f"  {h:<20} {', '.join(names[:8])}{more}")
     if never:
         print(f"\n[installed but never invoked] {len(never)} of {len(installed)}")
         print("  Check each against inventory.py first: a skill with no")
         print("  description routes on the first line of its body, and if that")
-        print("  line is a bare heading its zero is weak evidence.")
-        print("  See references/judgment.md.")
+        print("  line is a bare heading its zero is weak evidence. A skill marked")
+        print("  shared may be in daily use elsewhere. See references/judgment.md.")
         for name in never:
-            print(f"  {name}")
+            mark = f"  (shared: {', '.join(shared[name])})" if name in shared else ""
+            print(f"  {name}{mark}")
 
     return 0
 
