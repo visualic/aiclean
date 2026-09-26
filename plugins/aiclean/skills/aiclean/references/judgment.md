@@ -66,7 +66,7 @@ Scanning skill bodies for legacy markers works for some signals and not others:
 |---|---|
 | context-saving justifications ("compaction required at N tasks") | yes, decisive |
 | manual CoT / ToT scaffolding | yes |
-| generate→critique→improve loops | yes |
+| generate→critique→improve loops (no new input or evidence — see `model-rules.md`) | yes |
 | hand-rolled agent messaging protocols | yes |
 | **counting 반드시 / MUST / CRITICAL** | **no — matched almost every skill, good ones included** |
 

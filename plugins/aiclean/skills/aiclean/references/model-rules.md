@@ -36,10 +36,24 @@ instructions written to patch weaknesses the model no longer has.
 
 Typical offenders: "never mark a task complete without proving it works",
 "challenge your own work before presenting it", "would a staff engineer approve
-this?", and any skill built as a generate → critique → improve loop.
+this?", and any skill built as a generate → critique → improve loop: the same
+output fed back through a critique pass with no new input, criteria or evidence,
+repeated until it looks right.
 
 **Important distinction.** "Do not claim tests pass without running them" is a
 different rule and should be *kept*. See `judgment.md`.
+
+**Also not the same thing: independent review.** A check that brings something
+the author did not have — a completion condition or spec to check against, tests
+or tool output the author never ran, a different model — and runs once at a
+defined point is not a re-check the model already performs. The Opus 5.5 guide
+recommends one for unattended loops:
+
+> "You can also state the completion condition up front and have a separate,
+> smaller model check the conversation against it at each end of turn, …"
+
+Judge a review skill by what it adds, not by which model runs it. A different
+model looping over the author's own conclusions with nothing new is still a loop.
 
 ### Instructions to reflect on or narrate reasoning
 
@@ -204,6 +218,22 @@ test files.
 > approach exists, say so in a sentence and continue with the task as asked
 > rather than quietly narrowing, widening, or transforming it."
 
+Audit for the inverse too: instructions that make the model re-ask for routine
+steps inside an already-approved scope ("confirm before each edit", "ask before
+running tests"). They produce exactly the check-ins the quote tells the model to
+avoid. The best-practices sample for balancing autonomy draws the line at
+reversibility:
+
+> "You are encouraged to take local, reversible actions like editing files or
+> running tests, but for actions that are hard to reverse, affect shared
+> systems, or could be destructive, ask the user before proceeding."
+
+So not every confirmation rule qualifies. Approval before external side effects,
+spending, or changes to the user's own setup (this skill's ground rule 1) is a
+deliberate boundary; leave it. Harness permission prompts are a separate problem
+with a separate fix: point to the built-in `/fewer-permission-prompts` rather
+than editing prompts.
+
 ### Correction narration
 
 > "Only correct an earlier statement when the error would change the user's
@@ -219,6 +249,26 @@ The one verification-shaped instruction that is still endorsed, from Fable 5:
 > yet verified, say so explicitly. Report outcomes faithfully: if tests fail,
 > say so with the output; if a step was skipped, say that; when something is
 > done and verified, state it plainly without hedging."
+
+### Resumed state is a claim, not evidence
+
+The same rule applies to what a session inherits. A skill or instruction that
+restores a checkpoint, progress file or saved summary and says "continue from
+here" hands the model a claim about branch, files and test results that may no
+longer hold. The long-horizon guidance points the other way: re-derive state
+from the sources that record it.
+
+> "Claude's latest models are extremely effective at discovering state from the
+> local filesystem."
+
+Its example start is "Review progress.txt, tests.json, and the git log" — the
+notes *and* the authoritative record. Audit resume flows for that pairing: do
+they check the saved state against git and the files it describes, or treat the
+summary as current fact? Built-in memory does not need this rule; Claude Code's
+own memory prompt already says recalled memories reflect when they were written
+and that named files should be checked before use. Do not add a blanket
+"re-read everything each turn"
+instruction either — that is the unconditional re-check this file removes.
 
 ### Only for unattended runs: named early stops
 
@@ -237,7 +287,7 @@ as done.
 The guide's full example names four stops: a summary that announces the next
 step, an offer to continue "unless you'd prefer otherwise", a list of
 non-blocking decisions, and pausing because a milestone felt like a good place.
-It keeps confirmation for risky or destructive actions. The harness side: keep
+It keeps confirmation for risky or irreversible actions. The harness side: keep
 open items in a checklist and cap automatic continuations at two or three.
 
 ### Only for agents across many connected apps: explore first
@@ -252,6 +302,36 @@ the task depends on often sits somewhere the request didn't mention:
 
 Only where those sources are trusted — the instruction tells the model to act on
 what it finds.
+
+---
+
+## Rules that contradict each other
+
+Each rule above is judged on its own. A setup can also fail between rules: two
+instructions that are each reasonable, loaded into the same session, telling the
+model opposite things. The model then picks one per turn, and the user sees
+behaviour that no single file explains. Read `CLAUDE.md` against the skills that
+load with it and look for these pairs:
+
+1. **Finish the scope ↔ stop at each step.** "Complete the approved task without
+   asking" in one place, "confirm before each change" or a skill that pauses at
+   every phase in another.
+2. **Confirm outward actions ↔ a skill that pushes, deploys or posts on its own.**
+   `CLAUDE.md` asks for confirmation before actions others can see; a skill runs
+   `git push`, opens or merges PRs, deploys or sends messages as a routine step.
+   The best-practices sample lists "pushing code, commenting on PRs/issues,
+   sending messages" among "operations visible to others" that warrant
+   confirmation.
+3. **Preserve expected behaviour ↔ make the tests pass.** A rule against changing
+   requirements next to an instruction to do whatever it takes to get the suite
+   green, with nothing about assertions, fixtures or excluded tests.
+4. **Trust the source ↔ trust the summary.** A rule to verify against the repo
+   next to a resume flow that treats a saved checkpoint or memory file as current
+   fact.
+
+Report each as one finding: both locations as `file:line`, both lines quoted,
+and when each one fires. Do not pick the winner. Which rule should hold is the
+user's policy, and either side may be the deliberate one.
 
 ---
 

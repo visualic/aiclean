@@ -48,15 +48,19 @@ python3 <skill-dir>/scripts/workspaces.py   # project-level .claude/ copies
 `--json` on any of them for machine-readable output. `workspaces.py` takes
 repeatable `--root` if the user's checkouts live somewhere unusual.
 
-### 3. Read CLAUDE.md against the guidance
+### 3. Read CLAUDE.md against the guidance, and against the skills
 
 Read `~/.claude/CLAUDE.md` and check it against `references/model-rules.md`.
 Look for instructions to **remove** (generic self-verification, "use subagents
 liberally", manual CoT, "think carefully before answering", "write out your
 reasoning", hard thresholds like "ANY task with 3+ steps", ALL-CAPS forcing,
-duplicate memory systems) and instructions to **add** (response length,
-written-document length, task scope, correction narration, evidence behind
-progress claims).
+duplicate memory systems, re-approval of routine steps inside an approved
+scope) and instructions to **add** (response length, written-document length,
+task scope, correction narration, evidence behind progress claims). Check
+resume and restore flows for treating a saved summary as current fact.
+
+Then read `CLAUDE.md` against the skills that load with it, for the four pairs
+in "Rules that contradict each other" in `model-rules.md`.
 
 Also check `settings.json` for `effortLevel`, a per-model level under
 `modelSettings`, or `env.CLAUDE_CODE_EFFORT_LEVEL` pinned at `high` or above —
@@ -86,6 +90,7 @@ Group by severity. Lead with things that are broken or free wins:
 - duplicate hooks, dead hook paths
 - custom skills shadowing a built-in
 - stale `CLAUDE.md` instructions, quoting the guidance
+- rules that contradict each other — quote both sides, as a question
 - effort pinned for an older model — as a question
 - never-invoked skills — as a question, with the Trap 2 caveat applied
 

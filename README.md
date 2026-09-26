@@ -50,9 +50,13 @@ your say-so, nothing is deleted — approved removals are moved to
 **CLAUDE.md** — instructions that current guidance says to remove (generic
 self-verification, "use subagents liberally", manual chain-of-thought, "think
 carefully before answering", hard thresholds like "ANY task with 3+ steps",
-duplicate memory systems), effort pinned at a level tuned for an older model,
-and the ones most files are missing (response length, written-document length,
-task scope, correction narration, evidence behind progress claims).
+duplicate memory systems, re-approval of routine steps inside an approved
+scope), effort pinned at a level tuned for an older model, and the ones most
+files are missing (response length, written-document length, task scope,
+correction narration, evidence behind progress claims). Also rules that
+contradict each other across `CLAUDE.md` and the skills that load with it — a
+confirm-before-pushing policy next to a skill that pushes on its own — reported
+with both sides quoted.
 
 **Skills and agents** — `SKILL.md` bodies large enough to cost tens of thousands
 of tokens per invocation; skills with no `description:`, which the router sees
@@ -125,10 +129,15 @@ Anthropic's prompt engineering documentation: the
 [prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices),
 and the per-model pages for
 [Opus 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
+[Opus 5.5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5),
 [Sonnet 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5),
 [Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5)
 and
-[Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1).
+[Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1);
+the [effort](https://platform.claude.com/docs/en/build-with-claude/effort) page;
+and Claude Code's [skills](https://code.claude.com/docs/en/skills) and
+[subagents](https://code.claude.com/docs/en/sub-agents) references for
+frontmatter keys and name precedence.
 
 ## License
 
