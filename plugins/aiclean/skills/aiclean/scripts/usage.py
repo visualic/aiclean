@@ -17,9 +17,9 @@ This script counts only those.
 
 A ZERO IS NOT ALWAYS EVIDENCE
 -----------------------------
-A skill with no `description:` frontmatter is invisible to the router, so it
-*could not* have been invoked. Cross-check zero counts against inventory.py
-before concluding a skill is unwanted. See references/judgment.md.
+A skill with no `description:` frontmatter is listed under the first line of its
+body -- usually a heading -- so it rarely routes. Its zero is weak evidence.
+Cross-check zero counts against inventory.py first. See references/judgment.md.
 
 Usage:
     python3 usage.py [--root ~/.claude] [--json]

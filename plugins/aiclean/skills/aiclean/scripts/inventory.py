@@ -38,7 +38,7 @@ SKILL_KEYS = {"name", "description", "when_to_use", "argument-hint", "arguments"
               "disable-model-invocation", "user-invocable", "allowed-tools",
               "disallowed-tools", "model", "effort", "context", "agent",
               "background", "hooks", "paths", "shell", "metadata", "license",
-              "compatibility", "version"}
+              "compatibility"}
 AGENT_KEYS = {"name", "description", "tools", "disallowedTools", "model",
               "permissionMode", "maxTurns", "skills", "mcpServers", "hooks",
               "memory", "background", "omitClaudeMd", "effort", "isolation",
@@ -56,7 +56,8 @@ def parse(path: str, known: set[str]) -> dict:
         return {}
     m = FRONTMATTER.match(text)
     if not m:
-        return {"frontmatter": False, "body_bytes": len(text.encode())}
+        return {"frontmatter": False, "body_bytes": len(text.encode()),
+                "fallback": first_line(text)}
     block = m.group(1)
     desc = DESCRIPTION.search(block)
     name = NAME.search(block)
@@ -65,10 +66,20 @@ def parse(path: str, known: set[str]) -> dict:
         "frontmatter": True,
         "name": name.group(1).strip() if name else None,
         "description": " ".join(desc.group(1).split()) if desc else None,
+        "fallback": None if desc else first_line(text[m.end():]),
         "extra_keys": sorted(keys - known),
         "body_bytes": len(text[m.end():].encode()),
         "total_bytes": len(text.encode()),
     }
+
+
+def first_line(body: str) -> str:
+    # With no description, Claude Code lists the skill under the first non-empty
+    # line of the body (code.claude.com/docs/en/skills) -- usually a heading.
+    for line in body.splitlines():
+        if line.strip():
+            return line.strip()
+    return ""
 
 
 def birth(path: str) -> str:
@@ -93,7 +104,7 @@ def collect(root: str) -> dict:
             os.path.isdir(os.path.join(d, "reference"))
         items["skills"].append(info)
 
-    # a skill directory with no SKILL.md is invisible to the router
+    # a skill directory with no SKILL.md is not a skill: nothing lists it
     for d in sorted(glob.glob(os.path.join(root, "skills", "*"))):
         if os.path.basename(d) in HARNESS_DIRS:
             continue
@@ -116,7 +127,7 @@ def routing_cost(items: dict) -> dict:
     chars = 0
     for group in items.values():
         for it in group:
-            chars += len(it.get("description") or "")
+            chars += len(it.get("description") or it.get("fallback") or "")
     # Korean/English mixed prose runs roughly 3 characters per token.
     return {"chars": chars, "approx_tokens": chars // 3}
 
@@ -146,14 +157,19 @@ def main() -> int:
     print(f"routing text loaded every session: {cost['chars']:,} chars "
           f"(~{cost['approx_tokens']:,} tokens)")
 
-    missing = [s for s in skills if not s.get("description")]
+    dead = [s for s in skills if s.get("no_skill_md")]
+    if dead:
+        print(f"\n[no SKILL.md] {len(dead)} -- not a skill, cannot be invoked:")
+        for s in dead:
+            print(f"  {s['id']}")
+
+    missing = [s for s in skills if not s.get("description") and not s.get("no_skill_md")]
     if missing:
-        print(f"\n[no description] {len(missing)} -- invisible to the router, "
-              f"cannot be invoked:")
+        print(f"\n[no description] {len(missing)} -- the router sees only the first "
+              f"line of the body, so these rarely route:")
         for s in missing:
-            why = "no SKILL.md" if s.get("no_skill_md") else \
-                  "no frontmatter" if not s.get("frontmatter") else "no description: key"
-            print(f"  {s['id']:<32} ({why})")
+            why = "no frontmatter" if not s.get("frontmatter") else "no description: key"
+            print(f"  {s['id']:<32} ({why}) routes on: {s.get('fallback') or '(empty)'!r}")
 
     big = sorted([s for s in skills if s.get("body_bytes", 0) > BODY_WARN],
                  key=lambda s: -s["body_bytes"])

@@ -1,6 +1,6 @@
 ---
 name: aiclean
-description: Audit and clean up a Claude Code setup against Anthropic's current prompt-engineering guidance. Finds stale scaffolding in CLAUDE.md (self-verification instructions, subagent encouragement, manual chain-of-thought, hard trigger thresholds), oversized SKILL.md files that cost tens of thousands of tokens per invocation, skills with no description that can never be routed to, duplicate and dead hooks in settings.json, skills that depend on an MCP server or API key that is not configured, broken cross-references, and skills that have never once been invoked. Reports findings and asks before changing anything; archives rather than deletes. Use on /aiclean, or for requests like "내 클로드 설정 점검해줘", "스킬 정리해줘", "설정 최적화", "audit my Claude setup", "why is my context so full", "clean up my skills".
+description: Audit and clean up a Claude Code setup against Anthropic's current prompt-engineering guidance. Finds stale scaffolding in CLAUDE.md (self-verification instructions, subagent encouragement, manual chain-of-thought, hard trigger thresholds), rules in CLAUDE.md and skills that contradict each other, oversized SKILL.md files that cost tens of thousands of tokens per invocation, skills with no description that the router can barely see, duplicate and dead hooks in settings.json, skills that depend on an MCP server or API key that is not configured, broken cross-references, and skills that have never once been invoked. Reports findings and asks before changing anything; archives rather than deletes. Use on /aiclean, or for requests like "내 클로드 설정 점검해줘", "스킬 정리해줘", "설정 최적화", "audit my Claude setup", "why is my context so full", "clean up my skills".
 ---
 
 # aiclean
@@ -58,8 +58,9 @@ duplicate memory systems) and instructions to **add** (response length,
 written-document length, task scope, correction narration, evidence behind
 progress claims).
 
-Also check `settings.json` for `effortLevel` or `env.CLAUDE_CODE_EFFORT_LEVEL`
-pinned at `high` or above — a carry-over from Opus 5 that costs more on Opus 5.5.
+Also check `settings.json` for `effortLevel`, a per-model level under
+`modelSettings`, or `env.CLAUDE_CODE_EFFORT_LEVEL` pinned at `high` or above —
+a carry-over from Opus 5 that costs more on Opus 5.5.
 
 `references/claude-md-template.md` has a drop-in replacement block. Keep the
 user's project-specific sections — API key tables, service quirks, house
@@ -79,7 +80,8 @@ know. Anything left over is the user's call to make, not yours.
 
 Group by severity. Lead with things that are broken or free wins:
 
-- skills that cannot run (no description, missing MCP server, missing keys)
+- skills that cannot run (no SKILL.md, missing MCP server, missing keys)
+- skills with no description — listed only by their first body line
 - oversized `SKILL.md` — give the per-invocation token cost
 - duplicate hooks, dead hook paths
 - custom skills shadowing a built-in
@@ -120,9 +122,12 @@ changing it affects everyone else working in that repo.
 
 Two things make this worth raising rather than skipping:
 
-**Double loading.** When a toolkit is installed both globally and into a repo,
-both load in that repo. The project copy is a snapshot from whenever its
-installer ran, so it is usually the older one, and it usually wins.
+**Double installs.** When a toolkit is installed both globally and into a repo,
+the project copy is a snapshot from whenever its installer ran, so it is usually
+the older one. What happens next depends on the kind. A same-name *skill* resolves
+to the personal copy, so the project copy is dead weight that someone may edit
+without effect; project-only skills still add to the routing list. A same-name
+*agent* resolves to the project copy, so the older one is what actually runs.
 
 **Worktrees multiply it.** Conductor workspaces, `git worktree add`, or any
 setup that gives each task its own checkout means every worktree of a repo

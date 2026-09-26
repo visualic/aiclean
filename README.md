@@ -55,9 +55,9 @@ and the ones most files are missing (response length, written-document length,
 task scope, correction narration, evidence behind progress claims).
 
 **Skills and agents** — `SKILL.md` bodies large enough to cost tens of thousands
-of tokens per invocation; skills with no `description:`, which the router cannot
-see and which therefore can never be invoked; inert custom frontmatter keys;
-custom skills shadowing a built-in.
+of tokens per invocation; skills with no `description:`, which the router sees
+only by the first line of the body and so rarely invokes; inert custom
+frontmatter keys; custom skills shadowing a built-in.
 
 **Hooks** — duplicate registrations that fire twice, and hooks pointing at paths
 that no longer exist.
@@ -70,8 +70,9 @@ run.
 that hide in `references/`, `templates/`, README files and helper scripts.
 
 **Project-level configuration** — `.claude/` directories committed inside
-repositories. When a toolkit is installed both globally and into a repo, both
-load there and the project copy is usually the older one. Git worktrees multiply
+repositories. When a toolkit is installed both globally and into a repo, the
+project copy is usually the older one: a same-name skill in it is shadowed by
+the global copy, while a same-name agent overrides it. Git worktrees multiply
 this: every worktree of a repo carries its own copy, so one stale commit becomes
 dozens of directories. Reported, never edited — it is committed configuration
 that affects everyone working in the repo.

@@ -3,10 +3,12 @@
 user-level setup.
 
 Why this matters more than it looks: a project-level `.claude/skills/` is
-committed configuration. It loads on top of the global setup for anyone working
+committed configuration. It loads alongside the global setup for anyone working
 in that repo, it is usually a snapshot of whatever a toolkit's installer copied
 in on the day it ran, and it goes stale silently while the global copy gets
-updated.
+updated. On a name clash the two kinds resolve in opposite directions
+(code.claude.com/docs/en/skills, /sub-agents): the personal skill runs over the
+project skill, but the project agent runs over the personal agent.
 
 Teams working in git worktrees -- Conductor workspaces, `git worktree add`,
 anything that gives each task its own checkout -- hit this hardest: every
@@ -43,6 +45,11 @@ def global_skills() -> set[str]:
     root = os.path.expanduser("~/.claude/skills")
     return {os.path.basename(os.path.dirname(p))
             for p in glob.glob(os.path.join(root, "*", "SKILL.md"))}
+
+
+def global_agents() -> set[str]:
+    root = os.path.expanduser("~/.claude/agents")
+    return {os.path.basename(p)[:-3] for p in glob.glob(os.path.join(root, "*.md"))}
 
 
 def scan(roots: list[str], max_depth: int = 3) -> list[dict]:
@@ -91,6 +98,7 @@ def main() -> int:
     roots = args.root or DEFAULT_ROOTS
     found = scan(roots)
     gskills = global_skills()
+    gagents = global_agents()
 
     if args.json:
         print(json.dumps({"roots": roots, "global_skills": sorted(gskills),
@@ -124,8 +132,11 @@ def main() -> int:
         if overlap:
             print(f"    ALSO INSTALLED GLOBALLY: {len(overlap)} of these "
                   f"({', '.join(overlap[:6])}{' ...' if len(overlap) > 6 else ''})")
-            print(f"    -> loaded twice in these directories; the project copy")
-            print(f"       usually wins and is usually the older one.")
+            print(f"    -> the global copy runs; these project copies are shadowed.")
+            print(f"       Edits to them do nothing in these directories.")
+        only_project = len(skills) - len(overlap)
+        if only_project:
+            print(f"    -> {only_project} project-only skill(s) add to the routing list here.")
         print()
 
     agent_items = [i for i in found if i["agents"]]
@@ -134,6 +145,10 @@ def main() -> int:
         for it in agent_items[:12]:
             print(f"    {it['display']}: {', '.join(it['agents'][:8])}"
                   f"{' ...' if len(it['agents']) > 8 else ''}")
+            clash = sorted(set(it["agents"]) & gagents)
+            if clash:
+                print(f"      overrides global: {', '.join(clash)} -- the project copy "
+                      f"runs here, and it is usually the older one")
         if len(agent_items) > 12:
             print(f"    ... and {len(agent_items)-12} more")
         print("    These are often hand-written domain agents, not toolkit")

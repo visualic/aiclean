@@ -29,12 +29,15 @@ Only `tool_use` blocks are evidence:
 
 ## Trap 2 — a zero invocation count can be an artifact
 
-A skill with no `description:` frontmatter is invisible to the router. It could
-not have been invoked. Its zero is not evidence of anything.
+A skill with no `description:` frontmatter is listed under the first non-empty
+line of its body, which is usually a heading like `# deploy-helper`. The router
+has almost nothing to match on, so the skill rarely routes. Its zero is weak
+evidence. (Before Claude Code 2.1.69, project skills without a description were
+not listed at all.)
 
 In the original audit, eight skills had no description. Fixing their frontmatter
 and *then* judging them by usage would have been circular — they had never had a
-chance to be used. They had to be judged on content instead.
+real chance to be used. They had to be judged on content instead.
 
 **Rule: cross-check every zero against `inventory.py`'s "no description" list
 before treating it as a signal.**
@@ -126,9 +129,10 @@ Archiving the custom copy *restored* capability.
 
 For each skill, in order.
 
-**1. Can it run?** Missing description, missing MCP server, missing credentials,
-broken paths, no SKILL.md → it is already dead. Fix or archive; there is no
-third option.
+**1. Can it run?** Missing MCP server, missing credentials, broken paths, no
+SKILL.md → it is already dead. Fix or archive; there is no third option. A
+missing description is not death but near-silence: fix the frontmatter, then
+judge it on content (Trap 2).
 
 **2. Does it substitute for something the model now does natively?** Manual
 reasoning scaffolds, self-critique loops, context-saving orchestration, agent

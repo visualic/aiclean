@@ -6,11 +6,14 @@ Fable 5.1).
 Read this before judging whether a rule in someone's `CLAUDE.md` is still
 earning its place.
 
-The single most useful framing comes from the Fable 5 page:
+The single most useful framing comes from the Fable 5 page. It is written about
+Fable 5, but every later per-model page repeats the pattern of removing
+instructions the model no longer needs:
 
 > "Refactor existing prompts and skills. Skills developed for prior models are
-> often too prescriptive and can degrade output quality. Review and consider
-> removing older instructions if default performance is better."
+> often too prescriptive for Claude Fable 5 and can degrade output quality.
+> Review and consider removing older instructions if default performance is
+> better."
 
 Most bloated configurations are not missing instructions. They are carrying
 instructions written to patch weaknesses the model no longer has.
@@ -23,13 +26,13 @@ instructions written to patch weaknesses the model no longer has.
 
 > "Claude Opus 5 verifies its own work without being told to. If your prompt
 > contains explicit verification instructions ('include a final verification
-> step for any non-trivial task', 'use a subagent to verify'), remove them:
+> step for any non-trivial task,' 'use a subagent to verify'), remove them:
 > instructions like these cause over-verification on Claude Opus 5, and removing
 > them reduces wasted tokens with no loss in quality."
 
-> "Avoid instructing re-checks it already performs ('double-check your answer',
-> 're-verify before responding'); these compound with the model's own behavior
-> and add cost without improving results."
+> "Avoid instructing re-checks it already performs ('double-check your answer,'
+> 're-verify before responding'); like verification instructions, these compound
+> with the model's own behavior and add cost without improving results."
 
 Typical offenders: "never mark a task complete without proving it works",
 "challenge your own work before presenting it", "would a staff engineer approve
@@ -48,7 +51,7 @@ answering" and reflection-loop instructions.
 
 > "If your prompts ask the model to write out its reasoning in the response,
 > remove those instructions, set `display: "summarized"`, and read the
-> summarized reasoning from the thinking blocks instead."
+> summarized reasoning from the thinking blocks instead; …"
 
 
 ### Manual Chain-of-Thought / Tree-of-Thought scaffolding
@@ -61,15 +64,22 @@ on Fable 5 / 5.1.
 > plan. Claude's reasoning frequently exceeds what a human would prescribe."
 
 On Opus 5.5 even the general version is superseded — thinking is always on and
-the model decides how much to do:
+the model decides how much to do. The guide says this about chat system prompts:
 
-> "If your system prompt contains instructions that tell Claude to think
-> carefully before answering, consider removing them for Claude Opus 5.5. The
-> model decides for itself how much to think, and effort is the main control."
+> "In chat applications, if your system prompt contains instructions that tell
+> Claude to think carefully before answering, consider removing them for Claude
+> Opus 5.5. The model decides for itself how much to think, and effort is the
+> main control."
 
-Anthropic measured removing such a line: replies started sooner with no clear
-quality loss. The inverse holds too — "answer quickly, don't overthink" is a
-weaker lever than lowering effort:
+Anthropic measured removing such a line in a chat product: replies started
+sooner with no clear quality loss. For a coding agent the same conclusion rests
+on the effort docs rather than that measurement:
+
+> "Adaptive thinking is always on and can't be turned off, so effort is the
+> primary control for how much the model reasons and what a request costs."
+
+The inverse holds too — "answer quickly, don't overthink" is a weaker lever than
+lowering effort:
 
 > "To get less thinking, lower the effort level first. Lowering effort reduces
 > thinking, and with it cost and latency, more reliably than prompt
@@ -124,12 +134,14 @@ Effort itself does not carry across models. Opus 5.5 defaults to `medium`
 
 > "Effort level names don't correspond to the same amount of thinking across
 > models: in Anthropic's testing, Claude Opus 5.5 at `medium` matches or exceeds
-> Claude Opus 5 at `high` on coding and knowledge-work evaluations."
+> Claude Opus 5 at `high` on coding and knowledge-work evaluations, …"
 
 > "Reserve `xhigh` and `max` for work where you've measured a quality gain."
 
-So an `effortLevel` in `settings.json`, or `CLAUDE_CODE_EFFORT_LEVEL` in its
-`env`, set to `high` or above for Opus 5 is now a cost and latency finding.
+So an `effortLevel` in `settings.json`, a per-model level saved under
+`modelSettings` (which takes precedence over `effortLevel` for that model), or
+`CLAUDE_CODE_EFFORT_LEVEL` in its `env` (which overrides both), set to `high` or
+above for Opus 5 is now a cost and latency finding.
 Report it as a question — the user may have measured a reason — not as an error.
 
 ### Scaffolding for charts, diagrams and screenshots
@@ -146,9 +158,9 @@ those.
 
 ### Generic "avoid the AI look" design instructions
 
-> "A general instruction such as 'avoid a generic AI look' mostly swaps one
+> "… a general instruction such as 'avoid a generic AI look' mostly swaps one
 > default for another. It responds well to instructions that name specific
-> patterns to avoid."
+> patterns to avoid, …"
 
 A design skill that says only "no AI slop" or "make it distinctive" is not
 removed but rewritten: name the patterns (cream background, italic accent words
@@ -249,9 +261,9 @@ what it finds.
   skill is invoked. Put detail in `references/` and have SKILL.md say which file
   answers which question. A 456 KB SKILL.md costs roughly 114,000 tokens per
   invocation.
-- **`description:` is the routing prompt.** A skill without one is invisible and
-  can never be invoked. Write what it does *and* when to use it, including the
-  literal phrases a user would type.
+- **`description:` is the routing prompt.** A skill without one is listed under
+  the first line of its body, usually a heading, and rarely routes. Write what it
+  does *and* when to use it, including the literal phrases a user would type.
 - **Only `name` and `description` (plus `when_to_use`) reach the router.**
   Other documented keys work — `allowed-tools`, `hooks`, `model`, `effort` on
   skills; `tools`, `model`, `effort`, `maxTurns` on agents — but they control
