@@ -40,8 +40,14 @@ In the original audit, eight skills had no description. Fixing their frontmatter
 and *then* judging them by usage would have been circular — they had never had a
 real chance to be used. They had to be judged on content instead.
 
+A rename resets the count the same way. Transcripts record the name a skill had
+when it ran, so after gstack's `skill_prefix` turned `codex` into
+`gstack-codex`, a skill used that week read as never invoked. `usage.py` now
+matches names across a toolkit prefix and lists those under "used under another
+name". A rename it cannot see, such as a hand-renamed skill, still reads as zero.
+
 **Rule: cross-check every zero against `inventory.py`'s "no description" list
-before treating it as a signal.**
+and against any recent rename before treating it as a signal.**
 
 ## Trap 3 — the name is not the content
 
