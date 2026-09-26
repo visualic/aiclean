@@ -50,14 +50,18 @@ your say-so, nothing is deleted — approved removals are moved to
 **CLAUDE.md** — instructions that current guidance says to remove (generic
 self-verification, "use subagents liberally", manual chain-of-thought, "think
 carefully before answering", hard thresholds like "ANY task with 3+ steps",
-duplicate memory systems), effort pinned at a level tuned for an older model,
-and the ones most files are missing (response length, written-document length,
-task scope, correction narration, evidence behind progress claims).
+duplicate memory systems, re-approval of routine steps inside an approved
+scope), effort pinned at a level tuned for an older model, and the ones most
+files are missing (response length, written-document length, task scope,
+correction narration, evidence behind progress claims). Also rules that
+contradict each other across `CLAUDE.md` and the skills that load with it — a
+confirm-before-pushing policy next to a skill that pushes on its own — reported
+with both sides quoted.
 
 **Skills and agents** — `SKILL.md` bodies large enough to cost tens of thousands
-of tokens per invocation; skills with no `description:`, which the router cannot
-see and which therefore can never be invoked; inert custom frontmatter keys;
-custom skills shadowing a built-in.
+of tokens per invocation; skills with no `description:`, which the router sees
+only by the first line of the body — often a bare heading; inert custom
+frontmatter keys; custom skills shadowing a built-in.
 
 **Hooks** — duplicate registrations that fire twice, and hooks pointing at paths
 that no longer exist.
@@ -70,8 +74,9 @@ run.
 that hide in `references/`, `templates/`, README files and helper scripts.
 
 **Project-level configuration** — `.claude/` directories committed inside
-repositories. When a toolkit is installed both globally and into a repo, both
-load there and the project copy is usually the older one. Git worktrees multiply
+repositories. When a toolkit is installed both globally and into a repo, the
+project copy is usually the older one: a same-name skill in it is shadowed by
+the global copy, while a same-name agent overrides it. Git worktrees multiply
 this: every worktree of a repo carries its own copy, so one stale commit becomes
 dozens of directories. Reported, never edited — it is committed configuration
 that affects everyone working in the repo.
@@ -124,10 +129,15 @@ Anthropic's prompt engineering documentation: the
 [prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices),
 and the per-model pages for
 [Opus 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
+[Opus 5.5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5),
 [Sonnet 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5),
 [Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5)
 and
-[Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1).
+[Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1);
+the [effort](https://platform.claude.com/docs/en/build-with-claude/effort) page;
+and Claude Code's [skills](https://code.claude.com/docs/en/skills) and
+[subagents](https://code.claude.com/docs/en/sub-agents) references for
+frontmatter keys and name precedence.
 
 ## License
 

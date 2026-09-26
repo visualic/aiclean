@@ -17,9 +17,10 @@ This script counts only those.
 
 A ZERO IS NOT ALWAYS EVIDENCE
 -----------------------------
-A skill with no `description:` frontmatter is invisible to the router, so it
-*could not* have been invoked. Cross-check zero counts against inventory.py
-before concluding a skill is unwanted. See references/judgment.md.
+A skill with no `description:` frontmatter is listed under the first line of its
+body. When that line is a bare heading, the skill barely routes and its zero is
+weak evidence.
+Cross-check zero counts against inventory.py first. See references/judgment.md.
 
 Usage:
     python3 usage.py [--root ~/.claude] [--json]
@@ -114,8 +115,9 @@ def main() -> int:
     if never:
         print(f"\n[installed but never invoked] {len(never)} of {len(installed)}")
         print("  Check each against inventory.py first: a skill with no")
-        print("  description could not have been invoked, so its zero means")
-        print("  nothing. See references/judgment.md.")
+        print("  description routes on the first line of its body, and if that")
+        print("  line is a bare heading its zero is weak evidence.")
+        print("  See references/judgment.md.")
         for name in never:
             print(f"  {name}")
 

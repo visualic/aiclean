@@ -29,12 +29,16 @@ Only `tool_use` blocks are evidence:
 
 ## Trap 2 — a zero invocation count can be an artifact
 
-A skill with no `description:` frontmatter is invisible to the router. It could
-not have been invoked. Its zero is not evidence of anything.
+A skill with no `description:` frontmatter is listed under the first non-empty
+line of its body, plus any `when_to_use`. Read what that line actually is. A bare
+heading like `# deploy-helper` gives the router almost nothing to match on, and
+then the skill's zero is weak evidence. A first line that already says what the
+skill does and when may route fine. (Before Claude Code 2.1.69, project skills
+without a description were not listed at all.)
 
 In the original audit, eight skills had no description. Fixing their frontmatter
 and *then* judging them by usage would have been circular — they had never had a
-chance to be used. They had to be judged on content instead.
+real chance to be used. They had to be judged on content instead.
 
 **Rule: cross-check every zero against `inventory.py`'s "no description" list
 before treating it as a signal.**
@@ -63,7 +67,7 @@ Scanning skill bodies for legacy markers works for some signals and not others:
 |---|---|
 | context-saving justifications ("compaction required at N tasks") | yes, decisive |
 | manual CoT / ToT scaffolding | yes |
-| generate→critique→improve loops | yes |
+| generate→critique→improve loops (no new input or evidence — see `model-rules.md`) | yes |
 | hand-rolled agent messaging protocols | yes |
 | **counting 반드시 / MUST / CRITICAL** | **no — matched almost every skill, good ones included** |
 
@@ -126,9 +130,10 @@ Archiving the custom copy *restored* capability.
 
 For each skill, in order.
 
-**1. Can it run?** Missing description, missing MCP server, missing credentials,
-broken paths, no SKILL.md → it is already dead. Fix or archive; there is no
-third option.
+**1. Can it run?** Missing MCP server, missing credentials, broken paths, no
+SKILL.md → it is already dead. Fix or archive; there is no third option. A
+missing description is not death; judge it by the line the router sees instead
+(Trap 2).
 
 **2. Does it substitute for something the model now does natively?** Manual
 reasoning scaffolds, self-critique loops, context-saving orchestration, agent
