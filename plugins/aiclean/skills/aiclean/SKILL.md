@@ -93,7 +93,8 @@ Group by severity. Lead with things that are broken or free wins:
 - stale `CLAUDE.md` instructions, quoting the guidance
 - rules that contradict each other — quote both sides, as a question
 - effort pinned for an older model — as a question
-- never-invoked skills — as a question, with the Trap 2 caveat applied
+- never-invoked skills — as a question, with the Trap 2 caveat applied and
+  any skill another tool links into (Trap 9) set apart
 
 ### 6. Clean up after every removal
 
@@ -117,7 +118,7 @@ thing standing between the user and re-adding what was removed.
 | File | Contents |
 |---|---|
 | `references/model-rules.md` | What current models need added and removed, with the source quotes |
-| `references/judgment.md` | How the evidence misleads; eight real traps; the keep/archive decision |
+| `references/judgment.md` | How the evidence misleads; nine real traps; the keep/archive decision |
 | `references/claude-md-template.md` | Drop-in working-practice block, and what it deliberately omits |
 
 ## Project-level configuration

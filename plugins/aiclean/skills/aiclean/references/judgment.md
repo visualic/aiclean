@@ -3,8 +3,9 @@
 `inventory.py`, `usage.py` and `health.py` produce facts. Deciding what to keep
 is not a fact, and this is where an audit goes wrong.
 
-Every trap below was hit for real during the audit this skill was built from.
-Each one produced a confident, wrong conclusion that had to be walked back.
+Every trap below was hit for real, in the audit this skill was built from or
+in a later run of it. Each one produced a confident, wrong conclusion that had
+to be walked back.
 
 ---
 
@@ -129,6 +130,23 @@ supports effort levels, `--fix`, `--comment` and a multi-agent cloud review.
 Archiving the custom copy *restored* capability.
 
 **Rule: check every custom skill name against the built-in list.**
+
+## Trap 9 — a skill unused here can be in daily use by another tool
+
+gstack showed two invocations in two months of Claude Code transcripts, and
+its archive was one step from running. Then the other harness homes turned up:
+`~/.codex/skills/gstack*` were symlinks into `~/.claude/skills/gstack`, and
+Codex sessions had read `gstack-review` 2,213 times in the same window.
+Archiving the directory would have broken the tool the user relied on most.
+Removing only the Claude-side entries would not have held either: gstack's
+upgrade reinstalls them.
+
+`usage.py` reads Claude's transcripts only. It now lists skills that another
+tool's home links into under "shared with another tool" and marks them in
+the never-invoked list.
+
+**Rule: before archiving, check for links from other tools' homes. A shared
+skill's zero here says nothing about its use there.**
 
 ---
 

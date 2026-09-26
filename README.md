@@ -84,13 +84,15 @@ that affects everyone working in the repo.
 
 **Usage** — real `Skill` and subagent invocations parsed from session
 transcripts. Not a grep: every session's system prompt lists every skill, so
-grepping returns the same number for everything and means nothing.
+grepping returns the same number for everything and means nothing. Skills that
+another tool's home (`~/.codex`, `~/.agents`, ...) links into are set apart,
+since their use there never shows up in Claude's transcripts.
 
 ## What it will not do
 
 Decide for you. The scripts produce facts; the keep-or-archive call needs
 judgment, and `references/judgment.md` is mostly a record of how that judgment
-goes wrong — eight traps, each one a confident wrong conclusion from the audit
+goes wrong — nine traps, each one a confident wrong conclusion from the audit
 this was built from. The most useful is the simplest: a skill's name is not its
 contents, so open the file.
 
