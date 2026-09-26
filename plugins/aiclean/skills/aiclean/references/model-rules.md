@@ -311,7 +311,9 @@ Each rule above is judged on its own. A setup can also fail between rules: two
 instructions that are each reasonable, loaded into the same session, telling the
 model opposite things. The model then picks one per turn, and the user sees
 behaviour that no single file explains. Read `CLAUDE.md` against the skills that
-load with it and look for these pairs:
+load with it. These four pairs recur, but they are examples, not the full list —
+a toolkit preamble that says "do the complete thing" next to a rule that keeps
+adjacent fixes out of scope is another:
 
 1. **Finish the scope ↔ stop at each step.** "Complete the approved task without
    asking" in one place, "confirm before each change" or a skill that pauses at
