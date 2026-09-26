@@ -65,6 +65,41 @@ def typed_command(line: str) -> str | None:
     return typed.group(1) if typed else None
 
 
+def toolkit_prefixes(names: set[str], minimum: int = 5) -> set[str]:
+    """Prefixes like `gstack` that a toolkit puts on many skill names at once."""
+    counts = collections.Counter(n.split("-", 1)[0] for n in names if "-" in n)
+    return {p for p, c in counts.items() if c >= minimum}
+
+
+def base_name(name: str, prefixes: set[str]) -> str:
+    head, _, rest = name.partition("-")
+    return rest if rest and head in prefixes else name
+
+
+def never_invoked(root: str, res: dict) -> tuple[list[str], dict[str, list[str]]]:
+    """Installed skills with no recorded use, and ones used only under another name.
+
+    Toolkits can rename every skill at once (gstack's skill_prefix turns
+    `codex` into `gstack-codex`). Transcripts keep the old name, so a strict
+    match would call a skill used last week "never invoked".
+    """
+    installed = {os.path.basename(os.path.dirname(p))
+                 for p in glob.glob(os.path.join(root, "skills", "*", "SKILL.md"))}
+    used = set(res["skills"]) | set(res["slash"])
+    prefixes = toolkit_prefixes(installed)
+    by_base: dict[str, set[str]] = collections.defaultdict(set)
+    for u in used:
+        by_base[base_name(u, prefixes)].add(u)
+    never, renamed = [], {}
+    for name in sorted(installed - used):
+        earlier = sorted(by_base.get(base_name(name, prefixes), set()) - {name})
+        if earlier:
+            renamed[name] = earlier
+        else:
+            never.append(name)
+    return never, renamed
+
+
 def scan(root: str) -> dict:
     skills = collections.Counter()
     agents = collections.Counter()
@@ -103,8 +138,10 @@ def main() -> int:
     res = scan(root)
 
     if args.json:
-        print(json.dumps({k: (dict(v) if isinstance(v, collections.Counter) else v)
-                          for k, v in res.items()}, ensure_ascii=False, indent=2))
+        out = {k: (dict(v) if isinstance(v, collections.Counter) else v)
+               for k, v in res.items()}
+        out["never_invoked"], out["used_under_other_name"] = never_invoked(root, res)
+        print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0
 
     print(f"scanned {res['sessions']} session transcripts under {root}/projects\n")
@@ -128,9 +165,13 @@ def main() -> int:
         print(f"  {n:>5}  /{name}")
 
     # Installed but never invoked. Report it as a question, not a verdict.
-    installed = {os.path.basename(os.path.dirname(p))
-                 for p in glob.glob(os.path.join(root, "skills", "*", "SKILL.md"))}
-    never = sorted(installed - set(res["skills"]) - set(res["slash"]))
+    installed = glob.glob(os.path.join(root, "skills", "*", "SKILL.md"))
+    never, renamed = never_invoked(root, res)
+    if renamed:
+        print(f"\n[used under another name] {len(renamed)} -- history is recorded "
+              f"under the name the skill had then:")
+        for name, earlier in renamed.items():
+            print(f"  {name:<32} as {', '.join(earlier)}")
     if never:
         print(f"\n[installed but never invoked] {len(never)} of {len(installed)}")
         print("  Check each against inventory.py first: a skill with no")
