@@ -86,6 +86,7 @@ Group by severity. Lead with things that are broken or free wins:
 
 - skills that cannot run (no SKILL.md, missing MCP server, missing keys)
 - skills with no description — listed only by their first body line
+- agents that share a `name` — only one of them loads
 - oversized `SKILL.md` — give the per-invocation token cost
 - duplicate hooks, dead hook paths
 - custom skills shadowing a built-in

@@ -63,10 +63,16 @@ def agent_name(path: str) -> str:
     return os.path.basename(path)[:-3]
 
 
-def agent_names(agents_dir: str) -> list[str]:
+def agent_files(agents_dir: str) -> dict[str, list[str]]:
     # agents/ is scanned recursively; subfolders do not change identity
-    return sorted({agent_name(p) for p in
-                   glob.glob(os.path.join(agents_dir, "**", "*.md"), recursive=True)})
+    files: dict[str, list[str]] = {}
+    for p in sorted(glob.glob(os.path.join(agents_dir, "**", "*.md"), recursive=True)):
+        files.setdefault(agent_name(p), []).append(os.path.relpath(p, agents_dir))
+    return files
+
+
+def agent_names(agents_dir: str) -> list[str]:
+    return sorted(agent_files(agents_dir))
 
 
 def global_agents() -> set[str]:
@@ -91,7 +97,10 @@ def scan(roots: list[str], max_depth: int = 3) -> list[dict]:
                 skills = sorted(
                     os.path.basename(os.path.dirname(p))
                     for p in glob.glob(os.path.join(cdir, "skills", "*", "SKILL.md")))
-                agents = agent_names(os.path.join(cdir, "agents"))
+                afiles = agent_files(os.path.join(cdir, "agents"))
+                agents = sorted(afiles)
+                # same name twice in one tree: only one loads, by read order
+                dup_agents = {n: p for n, p in afiles.items() if len(p) > 1}
                 has_settings = any(
                     os.path.exists(os.path.join(cdir, n))
                     for n in ("settings.json", "settings.local.json"))
@@ -102,6 +111,7 @@ def scan(roots: list[str], max_depth: int = 3) -> list[dict]:
                     "display": project.replace(os.path.expanduser("~"), "~"),
                     "skills": skills,
                     "agents": agents,
+                    "duplicate_agents": dup_agents,
                     "settings": has_settings,
                 })
     return found
@@ -168,6 +178,9 @@ def main() -> int:
         for it in agent_items[:12]:
             print(f"    {it['display']}: {', '.join(it['agents'][:8])}"
                   f"{' ...' if len(it['agents']) > 8 else ''}")
+            for n, paths in it["duplicate_agents"].items():
+                print(f"      duplicate name: {n} in {', '.join(paths)} -- only one "
+                      f"loads, chosen by filesystem read order")
             clash = it["agents_overriding_global"]
             if clash:
                 print(f"      overrides global: {', '.join(clash)} -- the project copy "

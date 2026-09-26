@@ -64,7 +64,7 @@ def parse(path: str, known: set[str], fallback: bool = True) -> dict:
     keys = set(re.findall(r"^([a-zA-Z_-]+):", block, re.M))
     return {
         "frontmatter": True,
-        "name": name.group(1).strip() if name else None,
+        "name": name.group(1).strip().strip("'\"") if name else None,
         "description": " ".join(desc.group(1).split()) if desc else None,
         "fallback": None if desc or not fallback else first_line(text[m.end():]),
         "extra_keys": sorted(keys - known),
@@ -127,6 +127,15 @@ def collect(root: str) -> dict:
     return items
 
 
+def duplicate_agents(items: dict, root: str) -> dict[str, list[str]]:
+    # Two files in one agents/ tree with the same `name`: Claude Code loads only
+    # one of them, chosen by filesystem read order (code.claude.com/docs/en/sub-agents)
+    seen: dict[str, list[str]] = {}
+    for a in items["agents"]:
+        seen.setdefault(a["id"], []).append(os.path.relpath(a["path"], root))
+    return {n: p for n, p in sorted(seen.items()) if len(p) > 1}
+
+
 def routing_cost(items: dict) -> dict:
     chars = 0
     for group in items.values():
@@ -151,7 +160,8 @@ def main() -> int:
     cost = routing_cost(items)
 
     if args.json:
-        print(json.dumps({"root": root, "items": items, "routing": cost},
+        print(json.dumps({"root": root, "items": items, "routing": cost,
+                          "duplicate_agents": duplicate_agents(items, root)},
                          ensure_ascii=False, indent=2))
         return 0
 
@@ -166,6 +176,13 @@ def main() -> int:
         print(f"\n[no SKILL.md] {len(dead)} -- not a skill, cannot be invoked:")
         for s in dead:
             print(f"  {s['id']}")
+
+    dups = duplicate_agents(items, root)
+    if dups:
+        print(f"\n[duplicate agent names] {len(dups)} -- Claude Code loads only one "
+              f"file per name, chosen by filesystem read order:")
+        for n, paths in dups.items():
+            print(f"  {n:<32} {', '.join(paths)}")
 
     missing = [s for s in skills if not s.get("description") and not s.get("no_skill_md")]
     if missing:
