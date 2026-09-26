@@ -113,10 +113,13 @@ def collect(root: str) -> dict:
                                     "frontmatter": False, "no_skill_md": True,
                                     "created": birth(d), "body_bytes": 0})
 
-    for agent_md in sorted(glob.glob(os.path.join(root, "agents", "*.md"))):
+    # agents/ is scanned recursively, and an agent is identified by its
+    # frontmatter `name`, not its path (code.claude.com/docs/en/sub-agents)
+    for agent_md in sorted(glob.glob(os.path.join(root, "agents", "**", "*.md"),
+                                     recursive=True)):
         # `description` is required for agents; there is no first-line fallback
         info = parse(agent_md, AGENT_KEYS, fallback=False)
-        info["id"] = os.path.basename(agent_md)[:-3]
+        info["id"] = info.get("name") or os.path.basename(agent_md)[:-3]
         info["path"] = agent_md
         info["created"] = birth(agent_md)
         items["agents"].append(info)
